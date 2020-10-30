@@ -6,7 +6,7 @@ library(tidyverse)
 library(psych)
 library(ggplot2)
 
-# Load in ataset
+# Load in dataset
 wine = read_csv('./data/BordeauxWines.csv')
 
 # Explore - summarize dataset
