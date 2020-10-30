@@ -1,0 +1,37 @@
+------------------------ README for wine_reviewer ------------------------------
+
+********************************************************************************
+Data dictionary:
+********************************************************************************
+X1          : (numeric)    The number of the record in the data, non-descriptive, 
+                           an index variable
+
+country     : (character)  The country of origin for the wine being reviewed
+
+description : (character)  A short description of the wine, stored as a string
+
+designation : (character)  Vineyard within the winery that the grapes were grown in
+
+points      : (numeric)    Numeric score the wine was given by WineEnthusiast
+                           on a 0-100 scale
+                           
+price       : (numeric)    Price of one bottle of wine
+
+province    : (character)  Province or state that wine is from
+
+region_1    : (character)  Area which the wine was grown within a province or state
+
+region_2    : (character)  More specific region within an area where wine is grown,
+                           not always specified
+                           
+taster_name : (character)  Name of the specific taster
+
+taster_twitter_handle : (character) twitter handle of taster
+
+title       : (character) The title of the wine review, often contains vintage
+
+variety     : (character) The type of grapes used to make the wine 
+
+winery      : (character) The winery that made the wine  
+
+

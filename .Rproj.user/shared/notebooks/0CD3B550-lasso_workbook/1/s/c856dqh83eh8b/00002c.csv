@@ -1,0 +1,6 @@
+"0","t_bins <- bin(life$Life.expectancy, nbins = 6, method = ""length"") # Bin response variable
+plot_dat <- cbind.data.frame(t_bins, life[, feat_vars])
+"
+"2","Error in data.frame(..., check.names = FALSE) : 
+  arguments imply differing number of rows: 2928, 2938
+"

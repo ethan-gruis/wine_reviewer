@@ -1,0 +1,6 @@
+"0","imputed_h_values <- mice( data = house_price, # Set dataset"
+"0","                        m = 1, # Set number of multiple imputations"
+"0","                        maxit = 40, # Set maximum number of iterations"
+"0","                        method = ""cart"", # Set method"
+"0","                        print = FALSE) # Set whether to print output or not"
+"0","h_com <- complete(imputed_h_values)"

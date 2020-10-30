@@ -1,0 +1,25 @@
+{
+    "id": "82B42CE0",
+    "path": "~/Documents/Fall 2020/Machine Learning/wine_reviewer/wine_reviewer.R",
+    "project_path": "wine_reviewer.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1603337889808.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "cursorPosition": "17,44",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1604070541,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1604070541,
+    "read_only": false,
+    "read_only_alternatives": []
+}
