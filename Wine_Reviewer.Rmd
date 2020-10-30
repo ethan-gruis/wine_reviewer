@@ -17,7 +17,7 @@ library(tidyverse)
 Load in the data
 
 ```{r}
-wine_data <- read_csv("../data/BordeauxWines.csv", locale = readr::locale(encoding = "latin1"))
+wine_data <- read_csv("./data/BordeauxWines.csv", locale = readr::locale(encoding = "latin1"))
 ```
 
 ```{r}
@@ -53,23 +53,27 @@ wine_data$Price <- as.numeric(wine_data$Price)
 # Visualizations
 
 ```{r}
+library(ggdark)
+
 price_score_plot <- ggplot(wine_data, aes(x = Price, y = Score)) +
   geom_point() +
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm", color = "red") +
   theme_bw() +
   theme(panel.grid.major = element_blank(), # Turn of the background grid
     panel.grid.minor = element_blank(),
-    panel.background = element_blank())
+    panel.background = element_blank()) +
+  dark_theme_gray()
 
 price_score_plot
 
 score_year_plot <- ggplot(wine_data, aes(x = Year, y = Score)) +
   geom_point() +
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm", color = "red") +
   theme_bw() +
   theme(panel.grid.major = element_blank(), # Turn of the background grid
     panel.grid.minor = element_blank(),
-    panel.background = element_blank())
+    panel.background = element_blank()) +
+  dark_theme_gray()
 
 score_year_plot
 ```
