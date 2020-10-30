@@ -21,8 +21,8 @@ wine_data <- read_csv("./data/BordeauxWines.csv", locale = readr::locale(encodin
 ```
 
 ```{r}
-summary(wine_data)
-str(wine_data)
+# summary(wine_data)
+# str(wine_data)
 ```
 
 # Mutate our variables into factors
@@ -30,8 +30,9 @@ str(wine_data)
 ```{r}
 wine_cols <- c(5:989)
 wine_data[,wine_cols] <- lapply(wine_data[,wine_cols], factor)
+# wine_data[,wine_cols] <- lapply(wine_data[,wine_cols], factor, level = c(0, 1), labels = c("0", "1"))
 
-str(wine_data)
+# str(wine_data)
 ```
 
 Splice our dataset to make it more manageable when cleaning.
@@ -81,19 +82,21 @@ score_year_plot
 # Linear regressions
 
 ```{r}
-lm_1 <- lm(Score ~ Price + Year, data = wine_data)
+lm_1 <- lm(Score ~ Price, data = wine_data)
 
 summary(lm_1)
 ```
 
 ```{r}
-lm_2 <- lm(Score ~ ., data = wine_data)
+lm_2 <- lm(Score ~ Year, data = wine_data)
 
 summary(lm_2)
 ```
 
 
 ```{r}
+# Test glm with factors
+# Doesnt work obviously
 log_fit_1 <- glm(Score ~ ., # Set formula
              family=gaussian(link='identity'), # Set logistic regression
              data= wine_data) # Set dataset
