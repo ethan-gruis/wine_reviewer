@@ -1,0 +1,98 @@
+---
+title: "ML_Problem_Proposal_Wine"
+author: "Shivam Patel"
+date: "10/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+Load in the data
+
+```{r}
+wine_data <- read_csv("../data/BordeauxWines.csv", locale = readr::locale(encoding = "latin1"))
+```
+
+```{r}
+summary(wine_data)
+str(wine_data)
+```
+
+# Mutate our variables into factors
+
+```{r}
+wine_cols <- c(5:989)
+wine_data[,wine_cols] <- lapply(wine_data[,wine_cols], factor)
+
+str(wine_data)
+```
+
+Splice our dataset to make it more manageable when cleaning.
+
+```{r}
+wine_spliced <- wine_data[1:10,]
+```
+
+Remove dollar signs from Price.
+
+```{r}
+wine_data$Price <- str_replace(wine_data$Price, "\\$", "")
+
+wine_data$Price <- as.numeric(wine_data$Price)
+
+# wine_spliced$Price <- gsub("\\$", "", wine_spliced$Price)
+```
+
+# Visualizations
+
+```{r}
+price_score_plot <- ggplot(wine_data, aes(x = Price, y = Score)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), # Turn of the background grid
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank())
+
+price_score_plot
+
+score_year_plot <- ggplot(wine_data, aes(x = Year, y = Score)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), # Turn of the background grid
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank())
+
+score_year_plot
+```
+
+# Linear regressions
+
+```{r}
+lm_1 <- lm(Score ~ Price + Year, data = wine_data)
+
+summary(lm_1)
+```
+
+```{r}
+lm_2 <- lm(Score ~ ., data = wine_data)
+
+summary(lm_2)
+```
+
+
+```{r}
+log_fit_1 <- glm(Score ~ ., # Set formula
+             family=gaussian(link='identity'), # Set logistic regression
+             data= wine_data) # Set dataset
+summary(log_fit_1)
+```
+
