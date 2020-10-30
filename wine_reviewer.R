@@ -43,20 +43,6 @@ g_2 <- ggplot(data = wine, aes(x = Year, y = Score)) +
         panel.background = element_blank())
 g_2
 
-
-g_3 <- ggplot(data = wine, aes(x = Wine, y = Score)) +
-  geom_violin() +
-  theme_bw() + # Set theme bw
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.border = element_blank(),
-        panel.background = element_blank())
-g_3
-
-
-model1 <- lm(data = wine, Score ~.,)
-
-
 # Training + Testing
 # use xg boost
 # run in parallel
