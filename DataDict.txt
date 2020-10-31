@@ -13,5 +13,3 @@ Price : The price of the wine
 
 All other columns: Binarized values of whether a note appears in a wine or not
 
-Ben
-

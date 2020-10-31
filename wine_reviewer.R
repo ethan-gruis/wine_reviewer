@@ -43,6 +43,7 @@ g_2 <- ggplot(data = wine, aes(x = Year, y = Score)) +
         panel.background = element_blank())
 g_2
 
+
 # Training + Testing
 # use xg boost
 # run in parallel
