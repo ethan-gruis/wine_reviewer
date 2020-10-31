@@ -1,6 +1,6 @@
 ---
 title: "ML_Problem_Proposal_Wine"
-author: "Shivam Patel"
+author: "Shivam Patel, Ethan Gruis, Ben Siglow"
 date: "10/29/2020"
 output: html_document
 ---
@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
+library(ggdark)
 ```
 
 
@@ -30,23 +31,26 @@ wine_data <- read_csv("./data/BordeauxWines.csv", locale = readr::locale(encodin
 ```{r}
 wine_cols <- c(5:989)
 wine_data[,wine_cols] <- lapply(wine_data[,wine_cols], factor)
-# wine_data[,wine_cols] <- lapply(wine_data[,wine_cols], factor, level = c(0, 1), labels = c("0", "1"))
+#wine_data[,wine_cols] <- lapply(wine_data[,wine_cols], factor, level = c(0, 1))
 
-# str(wine_data)
+# ISSUE: when factorized, wine sometimes has columns with only 1 factor, this selects only columns with multiple factors and drops the rest
+wine_fixed <- wine_data[, sapply(wine_data, function(col) length(unique(col))) > 1]
+
+# str(wine_fixed, list.len=ncol(wine_fixed))
 ```
 
 Splice our dataset to make it more manageable when cleaning.
 
 ```{r}
-wine_spliced <- wine_data[1:10,]
+wine_spliced <- wine_fixed[1:10,]
 ```
 
 Remove dollar signs from Price.
 
 ```{r}
-wine_data$Price <- str_replace(wine_data$Price, "\\$", "")
+wine_fixed$Price <- str_replace(wine_fixed$Price, "\\$", "")
 
-wine_data$Price <- as.numeric(wine_data$Price)
+wine_fixed$Price <- as.numeric(wine_fixed$Price)
 
 # wine_spliced$Price <- gsub("\\$", "", wine_spliced$Price)
 ```
@@ -54,9 +58,7 @@ wine_data$Price <- as.numeric(wine_data$Price)
 # Visualizations
 
 ```{r}
-library(ggdark)
-
-price_score_plot <- ggplot(wine_data, aes(x = Price, y = Score)) +
+price_score_plot <- ggplot(wine_fixed, aes(x = Price, y = Score)) +
   geom_point() +
   geom_smooth(method = "lm", color = "red") +
   theme_bw() +
@@ -67,7 +69,7 @@ price_score_plot <- ggplot(wine_data, aes(x = Price, y = Score)) +
 
 price_score_plot
 
-score_year_plot <- ggplot(wine_data, aes(x = Year, y = Score)) +
+score_year_plot <- ggplot(wine_fixed, aes(x = Year, y = Score)) +
   geom_point() +
   geom_smooth(method = "lm", color = "red") +
   theme_bw() +
@@ -78,7 +80,7 @@ score_year_plot <- ggplot(wine_data, aes(x = Year, y = Score)) +
 
 score_year_plot
 
-hist_score_plot <- ggplot(wine_data, aes(x = Score)) + 
+hist_score_plot <- ggplot(wine_fixed, aes(x = Score)) + 
   geom_histogram(binwidth = 1, color="black", fill="white") +
   theme(panel.grid.major = element_blank(), # Turn of the background grid
     panel.grid.minor = element_blank(),
@@ -92,13 +94,13 @@ hist_score_plot
 # Linear regressions
 
 ```{r}
-lm_1 <- lm(Score ~ Price, data = wine_data)
+lm_1 <- lm(Score ~ Price, data = wine_fixed)
 
 summary(lm_1)
 ```
 
 ```{r}
-lm_2 <- lm(Score ~ Year, data = wine_data)
+lm_2 <- lm(Score ~ Year, data = wine_fixed)
 
 summary(lm_2)
 ```
@@ -107,9 +109,41 @@ summary(lm_2)
 ```{r}
 # Test glm with factors
 # Doesnt work obviously
-log_fit_1 <- glm(Score ~ ., # Set formula
+log_fit_1 <- glm(Score ~., # Set formula
              family=gaussian(link='identity'), # Set logistic regression
-             data= wine_data) # Set dataset
+             data= wine_fixed) # Set dataset
 summary(log_fit_1)
 ```
+
+```{r}
+summary(log_fit_1)
+```
+
+```{r}
+library(rpart)	
+
+tree_1 <- rpart(Score ~., # Set tree formula
+                data = wine_fixed)
+
+plotcp(tree_1) # Plot cp
+```
+
+```{r}
+tree_2 <- tree_1 <- rpart(Score ~., # Set tree formula
+                          data = wine_fixed, # Set data
+                          control = rpart.control(cp = 0.017)) # Set parameters
+```
+
+```{r}
+library(rattle)					# Fancy tree plot
+library(RColorBrewer)				# Color selection for fancy tree plot
+
+summary(tree_2)
+
+fancyRpartPlot(tree_2)
+```
+
+
+
+
 
