@@ -143,6 +143,66 @@ summary(tree_2)
 
 fancyRpartPlot(tree_2)
 ```
+## Code Borrowed From Random Forest In Parallel GitHub:
+https://github.com/lgreski/datasciencectacontent/blob/master/markdown/pml-randomForestPerformance.md
+
+```{r}
+library(randomForest)
+library(caTools)
+
+colnames(wine_fixed) <- make.names(names(wine_fixed))
+colnames(wine_fixed)[489] <- 'WELL.DONE.2'
+
+sample = sample.split(wine_fixed$Score, SplitRatio = .75)
+
+train = subset(wine_fixed, sample == TRUE)
+test = subset(wine_fixed, sample == FALSE)
+
+dim(train)
+dim(test)
+
+
+```
+
+```{r}
+library(caret)
+set.seed(612)
+
+inTraining <- createDataPartition(wine_fixed$Score, p = .75, list=FALSE)
+training <- wine_fixed[inTraining,]
+testing <- wine_fixed[-inTraining,]
+
+y <- training[,3]
+x <- training[,-3]
+```
+
+```{r}
+library(parallel)
+library(doParallel)
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+```
+
+```{r}
+fitControl <- trainControl(method = "cv",
+number = 5,
+allowParallel = TRUE)
+```
+
+Solution for NA problem: 
+https://stackoverflow.com/questions/38250440/error-in-na-fail-default-missing-values-in-object-but-no-missing-values
+```{r}
+system.time(fit <- train(Score~., method="rf",data=wine_fixed,trControl = fitControl,na.action=na.exclude))
+```
+
+```{r}
+stopCluster(cluster)
+registerDoSEQ()
+```
+
+
+
+
 
 
 
