@@ -110,10 +110,10 @@ summary(lm_2)
 ```{r}
 # Test glm with factors
 # Doesnt work obviously
-log_fit_1 <- glm(Score ~., # Set formula
-             family=gaussian(link='identity'), # Set logistic regression
-             data= wine_fixed) # Set dataset
-summary(log_fit_1)
+# log_fit_1 <- glm(Score ~., # Set formula
+#              family=gaussian(link='identity'), # Set logistic regression
+#              data= wine_fixed) # Set dataset
+# summary(log_fit_1)
 ```
 
 ```{r}
