@@ -18,7 +18,8 @@ library(ggdark)
 Load in the data
 
 ```{r}
-wine_data <- read_csv("./data/BordeauxWines.csv", locale = readr::locale(encoding = "latin1"))
+link <- 'https://www.dropbox.com/s/mjj5x2n2wfjxqs9/BordeauxWines.csv?dl=1'
+wine_data <- read_csv(link, locale = readr::locale(encoding = "latin1"))
 ```
 
 ```{r}
