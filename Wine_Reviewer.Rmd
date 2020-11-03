@@ -40,12 +40,6 @@ wine_fixed <- wine_data[, sapply(wine_data, function(col) length(unique(col))) >
 # str(wine_fixed, list.len=ncol(wine_fixed))
 ```
 
-Splice our dataset to make it more manageable when cleaning.
-
-```{r}
-wine_spliced <- wine_fixed[1:10,]
-```
-
 Remove dollar signs from Price.
 
 ```{r}
@@ -53,7 +47,10 @@ wine_fixed$Price <- str_replace(wine_fixed$Price, "\\$", "")
 
 wine_fixed$Price <- as.numeric(wine_fixed$Price)
 
-# wine_spliced$Price <- gsub("\\$", "", wine_spliced$Price)
+colnames(wine_fixed) <- make.names(names(wine_fixed))
+colnames(wine_fixed)[489] <- 'WELL.DONE.2'
+# what does well done mean in terms of wine???
+# look at price - some are in $/ML
 ```
 
 # Visualizations
@@ -150,16 +147,8 @@ https://github.com/lgreski/datasciencectacontent/blob/master/markdown/pml-random
 library(randomForest)
 library(caTools)
 
-colnames(wine_fixed) <- make.names(names(wine_fixed))
-colnames(wine_fixed)[489] <- 'WELL.DONE.2'
 
-sample = sample.split(wine_fixed$Score, SplitRatio = .75)
 
-train = subset(wine_fixed, sample == TRUE)
-test = subset(wine_fixed, sample == FALSE)
-
-dim(train)
-dim(test)
 
 
 ```
@@ -172,9 +161,6 @@ set.seed(612)
 inTraining <- createDataPartition(wine_fixed$Score, p = .75, list=FALSE)
 training <- wine_fixed[inTraining,]
 testing <- wine_fixed[-inTraining,]
-
-y <- training[,3]
-x <- training[,-3]
 ```
 
 ```{r}
@@ -198,8 +184,8 @@ registerDoParallel(cluster)
 
 ```{r}
 fitControl <- trainControl(method = "cv",
-number = 5,
-allowParallel = TRUE)
+                           number = 5,
+                           allowParallel = TRUE)
 ```
 
 Solution for NA problem: 
@@ -209,7 +195,7 @@ fit <- randomForest(Score ~., # Set tree formula
                 data = training[,3:620], # Set dataset 
                 ntree = 200,
                 do.trace = TRUE,
-                trControl = fitControl)
+                na.action=na.exclude)
 ```
 
 ```{r}
@@ -217,7 +203,9 @@ stopCluster(cluster)
 registerDoSEQ()
 ```
 
-
+Notes:
+- XGBoost: start playing with XGBoost :)
+- 
 
 
 
