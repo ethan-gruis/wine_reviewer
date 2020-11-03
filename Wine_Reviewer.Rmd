@@ -143,8 +143,6 @@ summary(tree_2)
 
 fancyRpartPlot(tree_2)
 ```
-
-
 ## Code Borrowed From Random Forest In Parallel GitHub:
 https://github.com/lgreski/datasciencectacontent/blob/master/markdown/pml-randomForestPerformance.md
 
@@ -183,10 +181,10 @@ x <- training[,-3]
 set.seed(258506) # Set random number generator seed for reproducability
 # Use random forest to do bagging
 bag_mod <- randomForest(Score ~., # Set tree formula
-                data = training[,3:620], # Set dataset
-                mtry = 617, # Set mtry to number of variables 
+                data = training[,3:620], # Set dataset 
                 ntree = 200,
-                na.action=na.exclude) # Set number of trees to use
+                na.action=na.exclude,
+                do.trace = TRUE) # Set number of trees to use
 bag_mod # View model
 ```
 
@@ -207,7 +205,11 @@ allowParallel = TRUE)
 Solution for NA problem: 
 https://stackoverflow.com/questions/38250440/error-in-na-fail-default-missing-values-in-object-but-no-missing-values
 ```{r}
-system.time(fit <- train(Score~., method="rf",data=wine_fixed,trControl = fitControl,na.action=na.exclude))
+fit <- randomForest(Score ~., # Set tree formula
+                data = training[,3:620], # Set dataset 
+                ntree = 200,
+                do.trace = TRUE,
+                trControl = fitControl)
 ```
 
 ```{r}
