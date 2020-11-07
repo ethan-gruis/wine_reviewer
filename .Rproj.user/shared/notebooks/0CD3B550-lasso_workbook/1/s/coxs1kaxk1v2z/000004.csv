@@ -1,5 +1,0 @@
-"0","imputed_values <- mice( data = life[, feat_vars], # Set dataset"
-"0","                        m = 1, # Set number of multiple imputations"
-"0","                        maxit = 40, # Set maximum number of iterations"
-"0","                        method = ""cart"", # Set method"
-"0","                        print = FALSE) # Set whether to print output or not"
