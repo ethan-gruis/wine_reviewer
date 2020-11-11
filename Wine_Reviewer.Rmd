@@ -107,7 +107,7 @@ summary(lm_2)
 ```
 
 ```{r}
-summary(log_fit_1)
+##summary(log_fit_1)
 #### What is this?
 ```
 
@@ -153,7 +153,7 @@ training <- wine_fixed[inTraining,]
 testing <- wine_fixed[-inTraining,]
 ```
 
-##Strat split to the train/tes. BS
+##Strat split to the train/test. BS
 ```{r}
 library(splitstackshape)
 set.seed(1984)
@@ -185,35 +185,37 @@ test_strat <- split[[2]]
 ```
 
 
-# Lets try parallel:
-```{r}
-library(parallel)
-library(doParallel)
-cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
-registerDoParallel(cluster)
-```
+### Commenting out parallel processing for knitting and MArtin meeting wil return to normal for possible additional models later. BS.
 
-```{r}
-fitControl <- trainControl(method = "cv",
-                           number = 5,
-                           allowParallel = TRUE)
-```
+<!-- # Lets try parallel: -->
+<!-- ```{r} -->
+<!-- library(parallel) -->
+<!-- library(doParallel) -->
+<!-- cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS -->
+<!-- registerDoParallel(cluster) -->
+<!-- ``` -->
 
-Solution for NA problem: 
-https://stackoverflow.com/questions/38250440/error-in-na-fail-default-missing-values-in-object-but-no-missing-values
+<!-- ```{r} -->
+<!-- fitControl <- trainControl(method = "cv", -->
+<!--                            number = 5, -->
+<!--                            allowParallel = TRUE) -->
+<!-- ``` -->
 
-```{r}
-stopCluster(cluster)
-registerDoSEQ()
-```
+<!-- Solution for NA problem:  -->
+<!-- https://stackoverflow.com/questions/38250440/error-in-na-fail-default-missing-values-in-object-but-no-missing-values -->
 
-```{r}
-library(xgboost)
-```
+<!-- ```{r} -->
+<!-- stopCluster(cluster) -->
+<!-- registerDoSEQ() -->
+<!-- ``` -->
 
-```{r}
-winetrain <- xgb.DMatrix(data = as.matrix())
-```
+<!-- ```{r} -->
+<!-- library(xgboost) -->
+<!-- ``` -->
+<!-- ## Previous try not used in this current XGboost model. -->
+<!-- ```{r} -->
+<!-- winetrain <- xgb.DMatrix(data = as.matrix()) -->
+<!-- ``` -->
 
 Notes:
 - XGBoost: start playing with XGBoost :)
@@ -221,13 +223,14 @@ Notes:
 ## XGboos apparently needs us to have our cols as numeric not factors.
 ## Created XG frame and used lapply to convert to numeric. BS
 ```{r}
+library(xgboost)
 wine_XG <- wine_fixed
 
 wine_XG[,2:620] <-  lapply(wine_XG[,2:620], as.numeric)
 ```
 
 
-
+## Re Strat split on new set of numeric Data. BS
 ```{r}
 set.seed(1984)
 split <-  stratified(wine_XG, c('Score'), .80,bothSets = TRUE)
@@ -238,7 +241,7 @@ test_strat <- split[[2]]
 
 - 
 ### First XG Run. BS
-### Converting to xgb magic BS
+### Converting to xgb magic. BS
 ```{r}
 library(xgboost)
 wtrain <- xgb.DMatrix(data = as.matrix(train_strat[, 2:620]), label = as.numeric(train_strat$Score))
@@ -271,7 +274,7 @@ wine_preds_1 <- predict(winebeast, wtest)
 
 
 ```
-Check Accuracy
+## Check Accuracy. BS
 ```{r}
 ##install.packages("Metrics")
 ## Based on this remedeal mean square we murdered this. 
@@ -280,31 +283,32 @@ actual <- test_strat$Score
 predicted <- wine_preds_1
 rmse(actual, predicted)
 ```
-
-
-
+## Resulting RSME value of .008172747. This is great, but we plan to look at some minor tuning to determine better values. 
 
 ```{r}
+library(pROC)
 wroc1 = roc(test_strat$Score, wine_preds_1)
 
 plot.roc(wroc1, print.auc = TRUE, col = "red", print.auc.col = "red")
 ```
+### Concernes on if this ROC curve is at all correct. I am not sure we are even able to determine AUC on this type of model. BS.
+
+
 
 ## Secound try
 ```{r}
-winebeast_1 <- xgboost(data = wtrain, # Set training data
+winebeast_1 <- xgboost(data = wtrain, 
               
         
                
-              eta = 0.03, # Set learning rate
-              # Set number of variables to use in each tree
+              eta = 0.03, 
                
-              nrounds = 1000, # Set number of rounds
-              early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
+              nrounds = 1000, 
+              early_stopping_rounds = 20,  
                
-              verbose = 1, # 1 - Prints out fit
-              nthread = 1, # Set number of parallel threads
-              print_every_n = 20) # Set evaluatio
+              verbose = 1, 
+              nthread = 1, 
+              print_every_n = 20) 
 
 
 
@@ -314,24 +318,17 @@ winebeast_1_preds <- predict(winebeast_1, wtrain)
 
 winebeast_1_preds1 <- predict(winebeast_1, wtest)
 
-rmse(actual, winebeast_1_preds1)# Create predictions for xgboost model
-
-## pred_dat <- cbind.data.frame(boost_preds_1 , test_data$class)#obselite now.
-# Convert predictions to classes, using optimal cut-off
-#beast_try_class <- rep('nonTOR', length(beast_try_preds))
-#beast_try_class[tor_preds_1 >= .489] <- 'TOR'
+rmse(actual, winebeast_1_preds1)
 
 
-#t2 <- table(boost_try_class, dtest$label) # Create table
-#confusionMatrix(t, positive = "TOR")
 ```
-
+### RSME of .0001268033. COncerned of hw low the current outcome is. This model is the main concern of the group, before moving forward with and other modeling. 
 ```{r}
-#wroc2 = roc(test_strat$Score, winebeast_1_preds)
+wroc2 <-  roc(test_strat$Score, winebeast_1_preds1)
 
-#plot.roc(wroc2, print.auc = TRUE, col = "red", print.auc.col = "red")
+plot.roc(wroc2, print.auc = TRUE, col = "red", print.auc.col = "red")
 ```
-
+### Confused on the levels warning message, however I assume this is, because of how roc cureves work and they can only be used within the classification model. Apologies for model measures. BS. 
 
 
 
