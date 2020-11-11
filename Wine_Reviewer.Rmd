@@ -271,6 +271,19 @@ wine_preds_1 <- predict(winebeast, wtest)
 
 
 ```
+Check Accuracy
+```{r}
+##install.packages("Metrics")
+## Based on this remedeal mean square we murdered this. 
+library(Metrics)
+actual <- test_strat$Score
+predicted <- wine_preds_1
+rmse(actual, predicted)
+```
+
+
+
+
 ```{r}
 wroc1 = roc(test_strat$Score, wine_preds_1)
 
@@ -291,16 +304,17 @@ winebeast_1 <- xgboost(data = wtrain, # Set training data
                
               verbose = 1, # 1 - Prints out fit
               nthread = 1, # Set number of parallel threads
-              print_every_n = 20) # Set evaluation metric to use
+              print_every_n = 20) # Set evaluatio
+
 
 
 winebeast_1_preds <- predict(winebeast_1, wtrain) 
-# Join predictions and actual
-winebeast_1_preds1 <- cbind.data.frame(winebeast_1_preds , train_strat$Score)
-names(tor_dat_try) <- c("predictions", "response")
 
 
-winebeast_1_preds1 <- predict(winebeast_1, wtest) # Create predictions for xgboost model
+
+winebeast_1_preds1 <- predict(winebeast_1, wtest)
+
+rmse(actual, winebeast_1_preds1)# Create predictions for xgboost model
 
 ## pred_dat <- cbind.data.frame(boost_preds_1 , test_data$class)#obselite now.
 # Convert predictions to classes, using optimal cut-off
