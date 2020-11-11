@@ -108,6 +108,7 @@ summary(lm_2)
 
 ```{r}
 summary(log_fit_1)
+#### What is this?
 ```
 
 ```{r}
@@ -150,6 +151,15 @@ set.seed(612)
 inTraining <- createDataPartition(wine_fixed$Score, p = .75, list=FALSE)
 training <- wine_fixed[inTraining,]
 testing <- wine_fixed[-inTraining,]
+```
+
+##Strat split to the train/tes. BS
+```{r}
+library(splitstackshape)
+set.seed(1984)
+split <-  stratified(wine_fixed, c('Score'), .80,bothSets = TRUE)
+train_strat <- split[[1]]
+test_strat <- split[[2]]
 ```
 
 # Deprecated Model Graveyard
@@ -207,8 +217,106 @@ winetrain <- xgb.DMatrix(data = as.matrix())
 
 Notes:
 - XGBoost: start playing with XGBoost :)
-- 
 
+## XGboos apparently needs us to have our cols as numeric not factors.
+## Created XG frame and used lapply to convert to numeric. BS
+```{r}
+wine_XG <- wine_fixed
+
+wine_XG[,2:620] <-  lapply(wine_XG[,2:620], as.numeric)
+```
+
+
+
+```{r}
+set.seed(1984)
+split <-  stratified(wine_XG, c('Score'), .80,bothSets = TRUE)
+train_strat <- split[[1]]
+test_strat <- split[[2]]
+
+```
+
+- 
+### First XG Run. BS
+### Converting to xgb magic BS
+```{r}
+library(xgboost)
+wtrain <- xgb.DMatrix(data = as.matrix(train_strat[, 2:620]), label = as.numeric(train_strat$Score))
+# Create test matrix
+wtest <- xgb.DMatrix(data = as.matrix(test_strat[, 2:620]), label = as.numeric(test_strat$Score)) 
+```
+
+
+## Training basic XG. BS
+```{r}
+set.seed(1984)
+winebeast <- xgboost(data = wtrain, 
+               
+               nrounds = 1000, 
+               
+               verbose = 1, 
+                print_every_n = 20, )
+
+```
+
+## Testing basic XG. BS
+```{r}
+wine_preds <- predict(winebeast, wtrain) 
+# Join predictions and actual
+wine_dat <- cbind.data.frame(wine_preds , train_strat$Score)
+names(wine_dat) <- c("predictions", "response")
+
+
+wine_preds_1 <- predict(winebeast, wtest)
+
+
+```
+```{r}
+wroc1 = roc(test_strat$Score, wine_preds_1)
+
+plot.roc(wroc1, print.auc = TRUE, col = "red", print.auc.col = "red")
+```
+
+## Secound try
+```{r}
+winebeast_1 <- xgboost(data = wtrain, # Set training data
+              
+        
+               
+              eta = 0.03, # Set learning rate
+              # Set number of variables to use in each tree
+               
+              nrounds = 1000, # Set number of rounds
+              early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
+               
+              verbose = 1, # 1 - Prints out fit
+              nthread = 1, # Set number of parallel threads
+              print_every_n = 20) # Set evaluation metric to use
+
+
+winebeast_1_preds <- predict(winebeast_1, wtrain) 
+# Join predictions and actual
+winebeast_1_preds1 <- cbind.data.frame(winebeast_1_preds , train_strat$Score)
+names(tor_dat_try) <- c("predictions", "response")
+
+
+winebeast_1_preds1 <- predict(winebeast_1, wtest) # Create predictions for xgboost model
+
+## pred_dat <- cbind.data.frame(boost_preds_1 , test_data$class)#obselite now.
+# Convert predictions to classes, using optimal cut-off
+#beast_try_class <- rep('nonTOR', length(beast_try_preds))
+#beast_try_class[tor_preds_1 >= .489] <- 'TOR'
+
+
+#t2 <- table(boost_try_class, dtest$label) # Create table
+#confusionMatrix(t, positive = "TOR")
+```
+
+```{r}
+#wroc2 = roc(test_strat$Score, winebeast_1_preds)
+
+#plot.roc(wroc2, print.auc = TRUE, col = "red", print.auc.col = "red")
+```
 
 
 
