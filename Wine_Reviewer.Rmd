@@ -12,214 +12,16 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(ggdark)
-```
-
-
-Load in the data
-
-```{r}
-link <- 'https://www.dropbox.com/s/mjj5x2n2wfjxqs9/BordeauxWines.csv?dl=1'
-wine_data <- read_csv(link, locale = readr::locale(encoding = "latin1"))
-```
-
-```{r}
-# summary(wine_data)
-# str(wine_data)
-```
-
-# Mutate our variables into factors
-
-```{r}
-wine_cols <- c(5:989)
-wine_data[,wine_cols] <- lapply(wine_data[,wine_cols], factor)
-#wine_data[,wine_cols] <- lapply(wine_data[,wine_cols], factor, level = c(0, 1))
-
-# ISSUE: when factorized, wine sometimes has columns with only 1 factor, this selects only columns with multiple factors and drops the rest
-wine_fixed <- wine_data[, sapply(wine_data, function(col) length(unique(col))) > 1]
-
-# str(wine_fixed, list.len=ncol(wine_fixed))
-```
-
-Remove dollar signs from Price.
-
-```{r}
-wine_fixed$Price <- str_replace(wine_fixed$Price, "\\$", "")
-
-wine_fixed$Price <- as.numeric(wine_fixed$Price)
-
-colnames(wine_fixed) <- make.names(names(wine_fixed))
-colnames(wine_fixed)[489] <- 'WELL.DONE.2'
-# what does well done mean in terms of wine???
-# look at price - some are in $/ML
-```
-
-# Visualizations
-
-```{r}
-price_score_plot <- ggplot(wine_fixed, aes(x = Price, y = Score)) +
-  geom_point() +
-  geom_smooth(method = "lm", color = "red") +
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), # Turn of the background grid
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) +
-  dark_theme_gray()
-
-price_score_plot
-
-score_year_plot <- ggplot(wine_fixed, aes(x = Year, y = Score)) +
-  geom_point() +
-  geom_smooth(method = "lm", color = "red") +
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), # Turn of the background grid
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) +
-  dark_theme_gray()
-
-score_year_plot
-
-hist_score_plot <- ggplot(wine_fixed, aes(x = Score)) + 
-  geom_histogram(binwidth = 1, color="black", fill="white") +
-  theme(panel.grid.major = element_blank(), # Turn of the background grid
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) +
-  xlim(70, 100) +
-  dark_theme_gray()
-
-hist_score_plot
-```
-
-# Linear regressions
-
-```{r}
-lm_1 <- lm(Score ~ Price, data = wine_fixed)
-
-summary(lm_1)
-```
-
-```{r}
-lm_2 <- lm(Score ~ Year, data = wine_fixed)
-
-summary(lm_2)
-```
-
-
-```{r}
-# Test glm with factors
-# Doesnt work obviously
-# log_fit_1 <- glm(Score ~., # Set formula
-#              family=gaussian(link='identity'), # Set logistic regression
-#              data= wine_fixed) # Set dataset
-# summary(log_fit_1)
-```
-
-```{r}
-summary(log_fit_1)
-```
-
-```{r}
-library(rpart)	
-
-tree_1 <- rpart(Score ~., # Set tree formula
-                data = wine_fixed)
-
-plotcp(tree_1) # Plot cp
-```
-
-```{r}
-tree_2 <- tree_1 <- rpart(Score ~., # Set tree formula
-                          data = wine_fixed, # Set data
-                          control = rpart.control(cp = 0.017)) # Set parameters
-```
-
-```{r}
-library(rattle)					# Fancy tree plot
-library(RColorBrewer)				# Color selection for fancy tree plot
-
-summary(tree_2)
-
-fancyRpartPlot(tree_2)
-```
-## Code Borrowed From Random Forest In Parallel GitHub:
-https://github.com/lgreski/datasciencectacontent/blob/master/markdown/pml-randomForestPerformance.md
-
-### NOTE: BE CAREFUL RUNNING ANYTHING BELOW THIS LINE
-
-```{r}
+library(rattle)	
+library(RColorBrewer)
 library(randomForest)
 library(caTools)
 library(caret)
-set.seed(612)
-
-inTraining <- createDataPartition(wine_fixed$Score, p = .75, list=FALSE)
-training <- wine_fixed[inTraining,]
-testing <- wine_fixed[-inTraining,]
-```
-
-```{r}
-set.seed(258506) # Set random number generator seed for reproducability
-# Use random forest to do bagging
-bag_mod <- randomForest(Score ~., # Set tree formula
-                data = training[,3:620], # Set dataset 
-                ntree = 200,
-                na.action=na.exclude,
-                do.trace = TRUE) # Set number of trees to use
-bag_mod # View model
-```
-
-
-```{r}
-library(parallel)
-library(doParallel)
-cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
-registerDoParallel(cluster)
-```
-
-```{r}
-fitControl <- trainControl(method = "cv",
-                           number = 5,
-                           allowParallel = TRUE)
-```
-
-Solution for NA problem: 
-https://stackoverflow.com/questions/38250440/error-in-na-fail-default-missing-values-in-object-but-no-missing-values
-```{r}
-fit <- randomForest(Score ~., # Set tree formula
-                data = training[,3:620], # Set dataset 
-                ntree = 100,
-                na.action=na.exclude,
-                do.trace = TRUE)
-```
-
-```{r}
-stopCluster(cluster)
-registerDoSEQ()
-```
-
-Notes:
-- Bem create split better
-- Shiv do shiv things
-- XGBoost: start playing with XGBoost :)
-
-
-
-
-
-=======
----
-title: "ML_Problem_Proposal_Wine"
-author: "Shivam Patel, Ethan Gruis, Ben Siglow"
-date: "10/29/2020"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r}
-library(tidyverse)
-library(ggdark)
+library(rpart)
+library(splitstackshape)
+library(xgboost)
+library(Metrics)
+library(pROC)
 ```
 
 
@@ -263,6 +65,15 @@ colnames(wine_fixed)[489] <- 'WELL.DONE.2'
 # what does well done mean in terms of wine???
 # look at price - some are in $/ML
 ```
+
+```{r}
+#wine_fixed$Year
+#not_price <- wine_fixed[c(2,3,5:620)]
+#wine_fixed$Price
+
+#rfImpute(wine_fixed$Price, wine_fixed$Year)
+```
+
 
 # Visualizations
 
@@ -320,7 +131,7 @@ summary(lm_2)
 ```
 
 ```{r}
-library(rpart)	
+	
 
 tree_1 <- rpart(Score ~., # Set tree formula
                 data = wine_fixed)
@@ -335,9 +146,6 @@ tree_2 <- tree_1 <- rpart(Score ~., # Set tree formula
 ```
 
 ```{r}
-library(rattle)					# Fancy tree plot
-library(RColorBrewer)				# Color selection for fancy tree plot
-
 summary(tree_2)
 
 fancyRpartPlot(tree_2)
@@ -347,13 +155,11 @@ fancyRpartPlot(tree_2)
 https://github.com/lgreski/datasciencectacontent/blob/master/markdown/pml-randomForestPerformance.md
 
 ```{r}
-library(randomForest)
-library(caTools)
+
 ```
 ### NOTE: BE CAREFUL RUNNING ANYTHING BELOW THIS LINE
 
 ```{r}
-library(caret)
 set.seed(612)
 
 inTraining <- createDataPartition(wine_fixed$Score, p = .75, list=FALSE)
@@ -363,7 +169,7 @@ testing <- wine_fixed[-inTraining,]
 
 ##Strat split to the train/test. BS
 ```{r}
-library(splitstackshape)
+
 set.seed(1984)
 split <-  stratified(wine_fixed, c('Score'), .80,bothSets = TRUE)
 train_strat <- split[[1]]
@@ -393,48 +199,12 @@ test_strat <- split[[2]]
 ```
 
 
-### Commenting out parallel processing for knitting and MArtin meeting wil return to normal for possible additional models later. BS.
-
-<!-- # Lets try parallel: -->
-<!-- ```{r} -->
-<!-- library(parallel) -->
-<!-- library(doParallel) -->
-<!-- cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS -->
-<!-- registerDoParallel(cluster) -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- fitControl <- trainControl(method = "cv", -->
-<!--                            number = 5, -->
-<!--                            allowParallel = TRUE) -->
-<!-- ``` -->
-
-<!-- Solution for NA problem:  -->
-<!-- https://stackoverflow.com/questions/38250440/error-in-na-fail-default-missing-values-in-object-but-no-missing-values -->
-
-<!-- ```{r} -->
-<!-- stopCluster(cluster) -->
-<!-- registerDoSEQ() -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- library(xgboost) -->
-<!-- ``` -->
-<!-- ## Previous try not used in this current XGboost model. -->
-<!-- ```{r} -->
-<!-- winetrain <- xgb.DMatrix(data = as.matrix()) -->
-<!-- ``` -->
-
-Notes:
-- XGBoost: start playing with XGBoost :)
-
-## XGboos apparently needs us to have our cols as numeric not factors.
 ## Created XG frame and used lapply to convert to numeric. BS
 ```{r}
-library(xgboost)
+
 wine_XG <- wine_fixed
 
-wine_XG[,2:620] <-  lapply(wine_XG[2,4:620], as.numeric)
+wine_XG[,c(2,4:620)] <-  lapply(wine_XG[,c(2,4:620)], as.numeric)
 ```
 
 
@@ -451,10 +221,9 @@ test_strat <- split[[2]]
 ### First XG Run. BS
 ### Converting to xgb magic. BS
 ```{r}
-library(xgboost)
-wtrain <- xgb.DMatrix(data = as.matrix(train_strat[, 2:620]), label = as.numeric(train_strat$Score))
+wtrain <- xgb.DMatrix(data = as.matrix(train_strat[,c(2,4:620)]), label = as.numeric(train_strat$Score))
 # Create test matrix
-wtest <- xgb.DMatrix(data = as.matrix(test_strat[, 2:620]), label = as.numeric(test_strat$Score)) 
+wtest <- xgb.DMatrix(data = as.matrix(test_strat[, c(2, 4:620)]), label = as.numeric(test_strat$Score)) 
 ```
 
 
@@ -464,6 +233,7 @@ set.seed(1984)
 winebeast <- xgboost(data = wtrain, 
                
                nrounds = 1000, 
+               nthread = 3, 
                
                verbose = 1, 
                 print_every_n = 20, )
@@ -486,7 +256,6 @@ wine_preds_1 <- predict(winebeast, wtest)
 ```{r}
 ##install.packages("Metrics")
 ## Based on this remedeal mean square we murdered this. 
-library(Metrics)
 actual <- test_strat$Score
 predicted <- wine_preds_1
 rmse(actual, predicted)
@@ -494,7 +263,6 @@ rmse(actual, predicted)
 ## Resulting RSME value of .008172747. This is great, but we plan to look at some minor tuning to determine better values. 
 
 ```{r}
-library(pROC)
 wroc1 = roc(test_strat$Score, wine_preds_1)
 
 plot.roc(wroc1, print.auc = TRUE, col = "red", print.auc.col = "red")
@@ -623,7 +391,7 @@ g_2 # Generate plot
 ```
 
 # TODO:
-- Imput NAs
+- Impute NAs
 - Check RandomForest
 - Tune xgBoost
 - look at SHAP Results / feature importance
