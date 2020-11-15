@@ -1,5 +1,5 @@
 ---
-title: "Wine the Hipster of Alchol"
+title: "Wine the Hipster of Alcohol"
 output:
   revealjs::revealjs_presentation:
     theme: night
@@ -41,27 +41,56 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 
 ```
 
-## Exploration
+## The Sour Grapes of Punctuation
 
-Testing hypotheses is a critical part of the scientific process.
+Punctuation errors on a college thesis may be nerve raking, but what if I told you the difference of "." and ":"
 
-But...you need to understand your data first.
-
-- What are some relationships, how are variables distributed, etc.
-
-Visualizing your data can go a long way to helping you explore your data.
 
 ## Preattentive Processing
 
-We pick up on visual cues much quicker than reading (i.e., what catches our eye).
+The two Con Kings
 
-- That is why entire disciplines are devoted to visual processing.
+- Hardy Rodenstock 
+-- Swindled Bill Koch out of $157,000 on one "Jefferson Bottle of Wine" 
+--- He did mistakenly put JH.T. rather then JH:T. which has led to his current civil case from Koch
 
-Some things hit us pretty quickly:
-
-color (hue & intensity); shape; space/density; line width & orientation; size
+- Rudy Kurniawan
+-- Was sentenced to 10 years for involvement in over $20million in feaux wine sales.
 
 ## Preattentive Processing In Action
+
+Inset gif
+
+## Intro to problem
+
+- We dont know wine and nether do million years
+-- The aim of this project is to shed some light on what makes a good wine review score
+
+## Method
+
+-even distribution graph
+
+## Review of assumptions
+
+- price score lm
+- year score lm
+
+## Models
+
+- Tree
+- Random Forest
+- XG Boost
+
+## Results
+
+- Values
+- Graphs
+
+## Next Steps
+
+- Berduax Vineyards
+- App
+
 
 ```{r, fig.height = 5.5, fig.width = 10.5, fig.align="center"}
 library(dplyr)

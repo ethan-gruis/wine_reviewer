@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
+##install.packages("SHAPforxgboost")
 library(tidyverse)
 library(ggdark)
 library(rattle)	
@@ -22,6 +23,7 @@ library(splitstackshape)
 library(xgboost)
 library(Metrics)
 library(pROC)
+library(SHAPforxgboost)
 ```
 
 
@@ -554,7 +556,7 @@ wine_it_light <- xgb.cv(data = wtrain,
                nthread = 5, 
                print_every_n = 20)
 ```
-
+## 7500 minimum on new learning rate
 
 ## Secound try will changed with the prefered tuned variables.
 ```{r}
@@ -585,12 +587,89 @@ rmse(actual, winebeast_1_preds1)
 ```
 ### RSME of 1.618199 COncerned of hw low the current outcome is. This model is the main concern of the group, before moving forward with and other modeling.
 
- 
-## SHAP Code 
+### Method to create new prediction without the price included
 ```{r}
+non_price <-  wine_fixed[,-4]
+```
+# COnvert to numeric. 
+```{r}
+np_XG <- non_price
 
+np_XG[,c(2,4:619)] <-  lapply(np_XG[,c(2,4:619)], as.numeric)
 ```
 
+
+### New stratisize split for non price data frame.
+```{r}
+set.seed(1984)
+nonpric_split <-  stratified(np_XG, c('Score'), .80,bothSets = TRUE)
+np_train_strat <- nonpric_split[[1]]
+np_test_strat <- nonpric_split[[2]]
+```
+
+### New XGboost groups for no price
+```{r}
+nptrain <- xgb.DMatrix(data = as.matrix(np_train_strat[,c(2,4:619)]), label = as.numeric(np_train_strat$Score))
+# Create test matrix
+nptest <- xgb.DMatrix(data = as.matrix(np_test_strat[, c(2, 4:619)]), label = as.numeric(np_test_strat$Score)) 
+```
+# Eunning the XGboost without the price variable.
+```{r}
+wine_noprice <- xgboost(data = nptrain, 
+               
+              eta = 0.01, # Set learning rate
+              max.depth = 15, # Set max depth
+              min_child_weight = 15, # Set minimum number of samples in node to split
+               
+              nrounds = 8500, # Set number of rounds
+              early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
+               
+              verbose = 1, # 1 - Prints out fit
+              nthread = 5, # Set number of parallel threads
+              print_every_n = 40) 
+
+
+
+wine_noprice_preds <- predict(wine_noprice, nptrain) 
+
+
+
+wine_noprice_pred1 <- predict(wine_noprice, nptest)
+
+rmse(np_test_strat$Score, wine_noprice_pred1)
+
+
+```
+ 
+## Top atteibutes for full XG
+```{r}
+# Extract importance
+fullxg_mat <- xgb.importance(model = winebeast_1)
+# Plot importance (top 10 variables)
+xgb.plot.importance(fullxg_mat, top_n = 10)
+```
+
+
+## Top attrinutes for noprice XG
+```{r}
+# Extract importance
+npxg_mat <- xgb.importance(model = wine_noprice)
+# Plot importance (top 10 variables)
+xgb.plot.importance(npxg_mat, top_n = 10)
+```
+
+
+## SHAP Code Full XG
+```{r}
+fullXG_exp = buildExplainer(winebeast_1, dtrain)
+```
+## SHAP code noPrice XG
+```{r}
+npXG_exp = buildExplainer(wine_noprice, dtrain, base_score = 0.5, trees_idx = NULL)
+```
+## Graph of Full XG
+
+## Graph of noPrice XG
 
 
 ```{r}
