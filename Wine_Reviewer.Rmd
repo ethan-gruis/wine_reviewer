@@ -260,31 +260,316 @@ actual <- test_strat$Score
 predicted <- wine_preds_1
 rmse(actual, predicted)
 ```
-## Resulting RSME value of .008172747. This is great, but we plan to look at some minor tuning to determine better values. 
-
+## Plotting results to first XG-boost.
 ```{r}
-wroc1 = roc(test_strat$Score, wine_preds_1)
-
-plot.roc(wroc1, print.auc = TRUE, col = "red", print.auc.col = "red")
+# Martin graph code 
+plot_data <- cbind.data.frame(actual, predicted)
+plot_data$col <- log(abs(actual - predicted) + 1)
+winebeast_plot <- ggplot(plot_data[actual > 60,], aes(x = actual, y = predicted, color = col)) + ## removing outlier score of 60 
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  scale_color_gradient(low = "blue", high = "red") +
+  dark_theme_bw() + 
+  theme(axis.line = element_line(colour = "white"), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank(), 
+        panel.background = element_blank(),
+        plot.subtitle = element_text(face = "italic")) +
+  labs(x = "Actual Wine Score", y = "Predicted Wine Score",
+       title = "Predicted vs Actual Wine Score",
+       subtitle = "XGBoost Model 1",
+       color = "Deviation from\nactual score")
+winebeast_plot
 ```
-### Concernes on if this ROC curve is at all correct. I am not sure we are even able to determine AUC on this type of model. BS.
 
 
-
-## Secound try
+## Check number of itterations in model. BS
 ```{r}
-winebeast_1 <- xgboost(data = wtrain, 
+set.seed(1984)
+wine_amount <- xgb.cv(data = wtrain, 
               
-        
+              nfold = 5, 
                
-              eta = 0.03, 
+               eta = 0.1, 
+              
+               nrounds = 2000, 
+               early_stopping_rounds = 50, 
                
-              nrounds = 1000, 
-              early_stopping_rounds = 20,  
+               verbose = 1, 
+               nthread = 4, 
+               print_every_n = 20) 
+
+```
+## Best itteration count is 756, 1000 will be a realistic iterations number for final XGBoost. BS
+## Work on heat maps.BS
+```{r}
+# Tuning Loop - Martin Barron contribution. 
+# Be Careful - This can take a very long time to run
+max_depth_vals <- c(3, 5, 7, 10, 15) # Create vector of max depth values
+min_child_weight <- c(1,3,5,7, 10, 15) # Create vector of min child values
+
+# Expand grid of parameter values
+wcv_params <- expand.grid(max_depth_vals, min_child_weight)
+names(wcv_params) <- c("max_depth", "min_child_weight")
+# Create results vector
+rmse_vec <- rep(NA, nrow(wcv_params)) 
+# Loop through results
+for(i in 1:nrow(wcv_params)){
+  set.seed(1984)
+  bst_tune <- xgb.cv(data = wtrain, # Set training data
+              
+              nfold = 5, # Use 5 fold cross-validation
                
-              verbose = 1, 
-              nthread = 1, 
-              print_every_n = 20) 
+              eta = 0.1, # Set learning rate
+              max.depth = wcv_params$max_depth[i], # Set max depth
+              min_child_weight = wcv_params$min_child_weight[i], # Set minimum number of samples in node to split
+             
+               
+              nrounds = 500, # Set number of rounds
+              early_stopping_rounds = 50, # Set number of rounds to stop at if there is no im
+              verbose = 1, # 1 - Prints out fit
+              nthread = 1, # Set number of parallel threads
+              print_every_n = 20) # Prints out result every 20th iteration
+
+  rmse_vec[i] <- bst_tune$evaluation_log$test_rmse_mean[bst_tune$best_ntreelimit]
+}
+
+```
+
+```{r}
+##wcv_params
+##rmse_vec
+##res_db
+```
+
+
+## Martin Heat plot of tuning.BS 
+```{r}
+# More Martin ggplot code 
+# Join results in dataset
+res_db <- cbind.data.frame(wcv_params, rmse_vec)
+names(res_db)[3] <- c("rmse") 
+res_db$max_depth <- as.factor(res_db$max_depth) # Convert tree number to factor for plotting
+res_db$min_child_weight <- as.factor(res_db$min_child_weight) # Convert node size to factor for plotting
+# Print RMSE heatmap
+wine_heat <- ggplot(res_db, aes(y = max_depth, x = min_child_weight, fill = rmse)) + # set aesthetics
+  geom_tile() + # Use geom_tile for heatmap
+  theme_bw() + # Set theme
+  scale_fill_gradient2(low = "blue", # Choose low color
+    mid = "white", # Choose mid color
+    high = "red", # Choose high color
+    midpoint =mean(res_db$rmse), # Choose mid point
+    space = "Lab", 
+    na.value ="grey", # Choose NA value
+    guide = "colourbar", # Set color bar
+    aesthetics = "fill") + # Select aesthetics to apply
+  labs(x = "Minimum Child Weight", y = "Max Depth", fill = "RMSE") # Set labels
+wine_heat # Generate plot
+```
+
+## Need to create multiple XG models to determine the prefered eta.
+# .1 eta run. BS
+```{r}
+set.seed(1984)
+wine_eta1 <- xgb.cv(data = wtrain, # Set training data
+              
+              nfold = 5, # Use 5 fold cross-validation
+               
+              eta = 0.1, # Set learning rate
+              max.depth = 15, # Set max depth
+              min_child_weight = 15, # Set minimum number of samples in node to split
+              gamma = 0, # Set minimum loss reduction for split
+              subsample = 0.9, # Set proportion of training data to use in tree
+              colsample_bytree =  0.9, # Set number of variables to use in each tree
+               
+              nrounds = 1000, # Set number of rounds
+              early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
+               
+              verbose = 1, # 1 - Prints out fit
+              nthread = 3, # Set number of parallel threads
+              print_every_n = 20) # Set evaluation metric to use
+
+```
+```{r}
+wine_eta1
+```
+
+# .05 eta run
+```{r}
+set.seed(1984)
+wine_eta2 <- xgb.cv(data = wtrain, # Set training data
+              
+              nfold = 5, # Use 5 fold cross-validation
+               
+              eta = 0.05, # Set learning rate
+              max.depth = 15, # Set max depth
+              min_child_weight = 15, # Set minimum number of samples in node to split
+              gamma = 0, # Set minimum loss reduction for split
+              subsample = 0.9, # Set proportion of training data to use in tree
+              colsample_bytree =  0.9, # Set number of variables to use in each tree
+               
+              nrounds = 1000, # Set number of rounds
+              early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
+               
+              verbose = 1, # 1 - Prints out fit
+              nthread = 3, # Set number of parallel threads
+              print_every_n = 20)
+```
+
+# .01 eta run
+```{r}
+set.seed(1984)
+wine_eta3 <- xgb.cv(data = wtrain, # Set training data
+              
+              nfold = 5, # Use 5 fold cross-validation
+               
+              eta = 0.01, # Set learning rate
+              max.depth = 15, # Set max depth
+              min_child_weight = 15, # Set minimum number of samples in node to split
+              gamma = 0, # Set minimum loss reduction for split
+              subsample = 0.9, # Set proportion of training data to use in tree
+              colsample_bytree =  0.9, # Set number of variables to use in each tree
+               
+              nrounds = 1000, # Set number of rounds
+              early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
+               
+              verbose = 1, # 1 - Prints out fit
+              nthread = 3, # Set number of parallel threads
+              print_every_n = 20)
+```
+
+# .005 eta run
+```{r}
+set.seed(1984)
+wine_eta4 <- xgb.cv(data = wtrain, # Set training data
+              
+              nfold = 5, # Use 5 fold cross-validation
+               
+              eta = 0.005, # Set learning rate
+              max.depth = 15, # Set max depth
+              min_child_weight = 15, # Set minimum number of samples in node to split
+              gamma = 0, # Set minimum loss reduction for split
+              subsample = 0.9, # Set proportion of training data to use in tree
+              colsample_bytree =  0.9, # Set number of variables to use in each tree
+               
+              nrounds = 1000, # Set number of rounds
+              early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
+               
+              verbose = 1, # 1 - Prints out fit
+              nthread = 3, # Set number of parallel threads
+              print_every_n = 20)
+```
+
+#.001 eta run
+```{r}
+set.seed(1984)
+wine_eta5 <- xgb.cv(data = wtrain, # Set training data
+              
+              nfold = 5, # Use 5 fold cross-validation
+               
+              eta = 0.001, # Set learning rate
+              max.depth = 15, # Set max depth
+              min_child_weight = 15, # Set minimum number of samples in node to split
+              gamma = 0, # Set minimum loss reduction for split
+              subsample = 0.9, # Set proportion of training data to use in tree
+              colsample_bytree =  0.9, # Set number of variables to use in each tree
+               
+              nrounds = 1000, # Set number of rounds
+              early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
+               
+              verbose = 1, # 1 - Prints out fit
+              nthread = 3, # Set number of parallel threads
+              print_every_n = 20)
+```
+
+#binding all eta runs
+```{r}
+# Extract results for model with eta = 0.3
+pd1 <- cbind.data.frame(wine_eta1$evaluation_log[,c("iter", "test_rmse_mean")], rep(0.1, nrow(wine_eta1$evaluation_log)))
+names(pd1)[3] <- "eta"
+# Extract results for model with eta = 0.1
+pd2 <- cbind.data.frame(wine_eta2$evaluation_log[,c("iter", "test_rmse_mean")], rep(0.05, nrow(wine_eta2$evaluation_log)))
+names(pd2)[3] <- "eta"
+# Extract results for model with eta = 0.05
+pd3 <- cbind.data.frame(wine_eta3$evaluation_log[,c("iter", "test_rmse_mean")], rep(0.01, nrow(wine_eta3$evaluation_log)))
+names(pd3)[3] <- "eta"
+# Extract results for model with eta = 0.01
+pd4 <- cbind.data.frame(wine_eta4$evaluation_log[,c("iter", "test_rmse_mean")], rep(0.005, nrow(wine_eta4$evaluation_log)))
+names(pd4)[3] <- "eta"
+# Extract results for model with eta = 0.005
+pd5 <- cbind.data.frame(wine_eta5$evaluation_log[,c("iter", "test_rmse_mean")], rep(0.001, nrow(wine_eta5$evaluation_log)))
+names(pd5)[3] <- "eta"
+# Join datasets
+eta_data <- rbind.data.frame(pd1, pd2, pd3, pd4, pd5)
+# Converty ETA to factor
+eta_data$eta <- as.factor(eta_data$eta)
+```
+
+# plotting multiple runs
+```{r}
+eta_plot <- ggplot(eta_data, aes(x = iter, y = test_rmse_mean, color = eta))+
+  geom_smooth(alpha = 0.5) +
+  theme_bw() + # Set theme
+  theme(panel.grid.major = element_blank(), # Remove grid
+        panel.grid.minor = element_blank(), # Remove grid
+        panel.border = element_blank(), # Remove grid
+        panel.background = element_blank()) + # Remove grid 
+  labs(x = "Number of Trees", title = "Error Rate v Number of Trees",
+       y = "Error Rate", color = "Learning \n Rate")  # Set labels
+eta_plot
+```
+
+## Confirming iiteration ammount with new eta
+```{r}
+set.seed(1984)
+
+wine_it <- xgb.cv(data = wtrain, 
+              
+              nfold = 5, 
+               
+               eta = 0.005, 
+              
+               nrounds = 3000, 
+               early_stopping_rounds = 50, 
+               
+               verbose = 1, 
+               nthread = 5, 
+               print_every_n = 20)
+```
+
+```{r}
+set.seed(1984)
+
+wine_it_light <- xgb.cv(data = wtrain, 
+              
+              nfold = 5, 
+               
+               eta = 0.01, 
+              
+               nrounds = 3000, 
+               early_stopping_rounds = 50, 
+               
+               verbose = 1, 
+               nthread = 5, 
+               print_every_n = 20)
+```
+
+
+## Secound try will changed with the prefered tuned variables.
+```{r}
+winebeast_1 <- xgboost(data = wtrain, # Use 5 fold cross-validation
+               
+              eta = 0.01, # Set learning rate
+              max.depth = 15, # Set max depth
+              min_child_weight = 15, # Set minimum number of samples in node to split
+               
+              nrounds = 2000, # Set number of rounds
+              early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
+               
+              verbose = 1, # 1 - Prints out fit
+              nthread = 5, # Set number of parallel threads
+              print_every_n = 40) 
 
 
 
@@ -298,13 +583,13 @@ rmse(actual, winebeast_1_preds1)
 
 
 ```
-### RSME of .0001268033. COncerned of hw low the current outcome is. This model is the main concern of the group, before moving forward with and other modeling. 
+### RSME of . COncerned of hw low the current outcome is. This model is the main concern of the group, before moving forward with and other modeling. 
+ 
+## SHAP Code 
 ```{r}
-wroc2 <-  roc(test_strat$Score, winebeast_1_preds1)
 
-plot.roc(wroc2, print.auc = TRUE, col = "red", print.auc.col = "red")
 ```
-### Confused on the levels warning message, however I assume this is, because of how roc cureves work and they can only be used within the classification model. Apologies for model measures. BS. 
+
 
 
 ```{r}
@@ -365,7 +650,7 @@ for(i in 1:nrow(cv_params)){
 ```{r}
 # More Martin ggplot code 
 # Join results in dataset
-res_db <- cbind.data.frame(cv_params, rmse_vec)
+res_db <- cbind.data.frame(wcv_params, rmse_vec)
 names(res_db)[3:4] <- c("rmse") 
 res_db$max_depth <- as.factor(res_db$max_depth) # Convert tree number to factor for plotting
 res_db$min_child_weight <- as.factor(res_db$min_child_weight) # Convert node size to factor for plotting
