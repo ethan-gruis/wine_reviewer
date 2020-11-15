@@ -547,7 +547,7 @@ wine_it_light <- xgb.cv(data = wtrain,
                
                eta = 0.01, 
               
-               nrounds = 3000, 
+               nrounds = 8000, 
                early_stopping_rounds = 50, 
                
                verbose = 1, 
@@ -564,7 +564,7 @@ winebeast_1 <- xgboost(data = wtrain, # Use 5 fold cross-validation
               max.depth = 15, # Set max depth
               min_child_weight = 15, # Set minimum number of samples in node to split
                
-              nrounds = 2000, # Set number of rounds
+              nrounds = 8500, # Set number of rounds
               early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
                
               verbose = 1, # 1 - Prints out fit
