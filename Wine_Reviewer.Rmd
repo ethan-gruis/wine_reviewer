@@ -583,7 +583,8 @@ rmse(actual, winebeast_1_preds1)
 
 
 ```
-### RSME of . COncerned of hw low the current outcome is. This model is the main concern of the group, before moving forward with and other modeling. 
+### RSME of 1.618199 COncerned of hw low the current outcome is. This model is the main concern of the group, before moving forward with and other modeling.
+
  
 ## SHAP Code 
 ```{r}
