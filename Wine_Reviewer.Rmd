@@ -657,6 +657,61 @@ npxg_mat <- xgb.importance(model = wine_noprice)
 # Plot importance (top 10 variables)
 xgb.plot.importance(npxg_mat, top_n = 10)
 ```
+## Graph of Full XG
+```{r}
+act_wine_full <- test_strat$Score
+
+pred_wine_full <- winebeast_1_preds1
+
+
+wine_full_data <- cbind.data.frame(act_wine_full, pred_wine_full)
+wine_full_data$col <- log(abs(act_wine_full - pred_wine_full) + 1)
+wine_full_plot <- ggplot(wine_full_data[act_wine_full > 60,], aes(x = act_wine_full, y = pred_wine_full, color = col)) + ## removing outlier score of 60 
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  scale_color_gradient(low = "blue", high = "red") +
+  dark_theme_bw() + 
+  theme(axis.line = element_line(colour = "white"), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank(), 
+        panel.background = element_blank(),
+        plot.subtitle = element_text(face = "italic")) +
+  labs(x = "Actual Wine Score", y = "Predicted Wine Score",
+       title = "Predicted vs Actual Wine Score for Full XG",
+       subtitle = "XGBoost Model 1",
+       color = "Deviation from\nactual score")
+wine_full_plot
+```
+
+
+## Graph of noPrice XG
+```{r}
+act_wine_np <- np_test_strat$Score
+
+pred_wine_np <- wine_noprice_pred1
+
+
+wine_np_data <- cbind.data.frame(act_wine_np, pred_wine_full)
+wine_np_data$col <- log(abs(act_wine_np - pred_wine_full) + 1)
+wine_np_plot <- ggplot(wine_np_data[act_wine_np > 60,], aes(x = act_wine_np, y = pred_wine_full, color = col)) + ## removing outlier score of 60 
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  scale_color_gradient(low = "blue", high = "red") +
+  dark_theme_bw() + 
+  theme(axis.line = element_line(colour = "white"), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank(), 
+        panel.background = element_blank(),
+        plot.subtitle = element_text(face = "italic")) +
+  labs(x = "Actual Wine Score", y = "Predicted Wine Score",
+       title = "Predicted vs Actual Wine Score FOr No Price XG",
+       subtitle = "XGBoost Model 1",
+       color = "Deviation from\nactual score")
+wine_np_plot
+
+```
 
 
 ## SHAP Code Full XG
