@@ -24,6 +24,7 @@ library(xgboost)
 library(Metrics)
 library(pROC)
 library(SHAPforxgboost)
+library(xgboostExplainer)
 ```
 
 
@@ -721,9 +722,6 @@ wine_np_plot
 
 ```
 
-```{r}
-library(xgboostExplainer)
-```
 
 ```{r}
 XG_exp = buildExplainer(winebeast_1, wtrain, type = "regression", base_score = 0.5, trees_idx = NULL)
