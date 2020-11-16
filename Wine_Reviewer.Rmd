@@ -132,14 +132,15 @@ summary(lm_2)
 
 # Decision Trees
 ```{r}
-tree_1 <- rpart(Score ~., # Set tree formula
+tree_1 <- rpart(Score ~., # Need to run tree on train and test set Ethan
                 data = wine_fixed)
 
-plotcp(tree_1) # Plot cp
+plotcp(tree_1)
+summary(tree_1)# Plot cp
 ```
 
 
-
+### Uncomment and move above 
 ##Strat split to the train/test. BS
 # ```{r}
 # 
@@ -155,7 +156,7 @@ plotcp(tree_1) # Plot cp
 load("./random_forest_model.rda")
 rf_mod <- fit
 
-rf_mod
+rf_mod ## Etahn hard code square root for rmse 
 ```
 
 
