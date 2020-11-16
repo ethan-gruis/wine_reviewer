@@ -716,11 +716,23 @@ wine_np_plot
 
 ## SHAP Code Full XG
 ```{r}
-fullXG_exp = buildExplainer(winebeast_1, dtrain)
+#library(devtools)
+#install_github("AppliedDataSciencePartners/xgboostExplainer")
+
 ```
+
+```{r}
+library(xgboostExplainer)
+```
+
+```{r}
+XG_exp = buildExplainer(winebeast_1, wtrain, type = "regression", base_score = 0.5, trees_idx = NULL)
+```
+
 ## SHAP code noPrice XG
 ```{r}
-npXG_exp = buildExplainer(wine_noprice, dtrain, base_score = 0.5, trees_idx = NULL)
+
+npXG_exp = buildExplainer(wine_noprice, nptrain, type = "regression", base_score = 0.5, trees_idx = NULL)
 ```
 ## Graph of Full XG
 
