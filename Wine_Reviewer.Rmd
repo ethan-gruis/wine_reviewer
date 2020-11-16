@@ -158,7 +158,7 @@ test_strat <- split[[2]]
 
 # Random Forest Model Results 
 ```{r}
-load("~/Fall2020/MachineLearning/random_forest_model.rda")
+load("./random_forest_model.rda")
 rf_mod <- fit
 
 rf_mod
