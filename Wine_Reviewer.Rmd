@@ -58,6 +58,8 @@ wine_fixed$Price <- str_replace(wine_fixed$Price, "\\$", "")
 
 wine_fixed$Price <- as.numeric(wine_fixed$Price)
 
+wine_fixed <- drop_na(wine_fixed)
+
 # Fix ColNames
 colnames(wine_fixed) <- make.names(names(wine_fixed))
 
@@ -136,24 +138,16 @@ tree_1 <- rpart(Score ~., # Set tree formula
 plotcp(tree_1) # Plot cp
 ```
 
-### NOTE: BE CAREFUL RUNNING ANYTHING BELOW THIS LINE
 
-```{r}
-set.seed(612)
-
-inTraining <- createDataPartition(wine_fixed$Score, p = .75, list=FALSE)
-training <- wine_fixed[inTraining,]
-testing <- wine_fixed[-inTraining,]
-```
 
 ##Strat split to the train/test. BS
-```{r}
-
-set.seed(1984)
-split <-  stratified(wine_fixed, c('Score'), .80,bothSets = TRUE)
-train_strat <- split[[1]]
-test_strat <- split[[2]]
-```
+# ```{r}
+# 
+# set.seed(1984)
+# split <-  stratified(wine_fixed, c('Score'), .80,bothSets = TRUE)
+# train_strat <- split[[1]]
+# test_strat <- split[[2]]
+# ```
 
 
 # Random Forest Model Results 
@@ -495,7 +489,7 @@ wine_it <- xgb.cv(data = wtrain,
                
                eta = 0.005, 
               
-               nrounds = 3000, 
+               nrounds = 10000, 
                early_stopping_rounds = 50, 
                
                verbose = 1, 
@@ -677,22 +671,32 @@ wine_np_plot
 ```
 
 
-## SHAP Code Full XG
-
-
-
+## SHAP Code Full XG 1 of 3
 ```{r}
 XG_exp = buildExplainer(winebeast_1, wtrain, type = "regression", base_score = 0.5, trees_idx = NULL)
 ```
-
-## SHAP code noPrice XG
+## SHAP Code FUll XG 2 of 3
 ```{r}
+pred_full_breakdown = explainPredictions(winebeast_1, XG_exp, wtest) # Breakdown predictions
+```
+## SHAP Code FUll XG 3 of 3
+```{r}
+showWaterfall(winebeast_1, XG_exp, wtest, as.matrix(np_test_strat[, 2,4:220]) ,1441, type = "regression", threshold = 0.07)
+```
 
+## SHAP code noPrice XG 1 of 3
+```{r}
 npXG_exp = buildExplainer(wine_noprice, nptrain, type = "regression", base_score = 0.5, trees_idx = NULL)
 ```
-## Graph of Full XG
+## SHAP code noPrice 2 of 3
+```{r}
+pred_np_breakdown = explainPredictions(wine_noprice, npXG_exp, nptest)
+```
+## SHAP code noPrice 3 of 3
+```{r}
+showWaterfall(wine_noprice, npXG_exp, nptest, as.matrix(test_strat[, 2,4:220]) ,1441, type = "regression", threshold = 0.07)
+```
 
-## Graph of noPrice XG
 
 
 ```{r}
