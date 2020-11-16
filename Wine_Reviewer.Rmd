@@ -480,7 +480,7 @@ eta_plot <- ggplot(eta_data, aes(x = iter, y = test_rmse_mean, color = eta))+
 eta_plot
 ```
 
-## Confirming iiteration ammount with new eta
+## Confirming iteration ammount with new eta
 ```{r}
 set.seed(1984)
 
