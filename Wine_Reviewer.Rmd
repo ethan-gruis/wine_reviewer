@@ -130,25 +130,45 @@ lm_2 <- lm(Score ~ Year, data = wine_fixed)
 summary(lm_2)
 ```
 
+
+##Strat split to the train/test. BS, SP
+```{r}
+wine_no_name <- wine_fixed[2:620]
+
+set.seed(1984)
+split <-  stratified(wine_no_name, c('Score'), .80,bothSets = TRUE)
+train_strat <- split[[1]]
+test_strat <- split[[2]]
+```
+
 # Decision Trees
 ```{r}
 tree_1 <- rpart(Score ~., # Need to run tree on train and test set Ethan
-                data = wine_fixed)
+                data = train_strat)
 
 plotcp(tree_1)
 summary(tree_1)# Plot cp
 ```
 
+# Prediction with no name in wine set from Decision Trees
+```{r}
+wine_pred_no_name <- predict(tree_1, test_strat)
 
-### Uncomment and move above 
-##Strat split to the train/test. BS
-# ```{r}
-# 
-# set.seed(1984)
-# split <-  stratified(wine_fixed, c('Score'), .80,bothSets = TRUE)
-# train_strat <- split[[1]]
-# test_strat <- split[[2]]
-# ```
+actual <- test_strat$Score
+predicted <- wine_pred_no_name
+rmse(actual, predicted)
+```
+
+<!-- SHIV: REMOVE LATER -->
+<!-- ### Uncomment and move above  -->
+<!-- ##Strat split to the train/test. BS -->
+<!-- # ```{r} -->
+<!-- #  -->
+<!-- # set.seed(1984) -->
+<!-- # split <-  stratified(wine_fixed, c('Score'), .80,bothSets = TRUE) -->
+<!-- # train_strat <- split[[1]] -->
+<!-- # test_strat <- split[[2]] -->
+<!-- # ``` -->
 
 
 # Random Forest Model Results 
@@ -201,21 +221,23 @@ winebeast <- xgboost(data = wtrain,
                 print_every_n = 20, )
 
 ```
-
-## Testing basic XG. BS
-```{r}
-wine_preds <- predict(winebeast, wtrain) 
-# Join predictions and actual
-wine_dat <- cbind.data.frame(wine_preds , train_strat$Score)
-names(wine_dat) <- c("predictions", "response")
-
-
-wine_preds_1 <- predict(winebeast, wtest)
+<!-- SHIV: REMOVE LATER -->
+<!-- ## Testing basic XG. BS -->
+<!-- ```{r} -->
+<!-- wine_preds <- predict(winebeast, wtrain)  -->
+<!-- # Join predictions and actual -->
+<!-- wine_dat <- cbind.data.frame(wine_preds , train_strat$Score) -->
+<!-- names(wine_dat) <- c("predictions", "response") -->
 
 
-```
+<!-- wine_preds_1 <- predict(winebeast, wtest) -->
+
+
+<!-- ``` -->
 ## Check Accuracy. BS
 ```{r}
+wine_preds_1 <- predict(winebeast, wtest)
+
 ##install.packages("Metrics")
 ## Based on this remedeal mean square we murdered this. 
 actual <- test_strat$Score
