@@ -156,7 +156,9 @@ summary(tree_1)# Plot cp
 load("./random_forest_model.rda")
 rf_mod <- fit
 
-rf_mod ## Etahn hard code square root for rmse 
+print(rf_mod)
+
+print(sqrt(rf_mod$mse[100]))
 ```
 
 
