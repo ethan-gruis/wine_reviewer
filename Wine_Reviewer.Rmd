@@ -1,5 +1,5 @@
 ---
-title: "ML_Problem_Proposal_Wine"
+title: "Bordeaux Wine Reviewer"
 author: "Shivam Patel, Ethan Gruis, Ben Siglow"
 date: "10/29/2020"
 output: html_document
@@ -9,7 +9,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+# Load Packages
+
+```{r Load Packages/Install}
 ##install.packages("SHAPforxgboost")
 #install_github("AppliedDataSciencePartners/xgboostExplainer")
 library(devtools)
@@ -30,20 +32,20 @@ library(SHAPforxgboost)
 library(xgboostExplainer)
 ```
 
-
-# Load in the data
-```{r}
+# Data Cleaning and Exploration
+## Loading Data
+```{r Load Data}
 link <- 'https://www.dropbox.com/s/mjj5x2n2wfjxqs9/BordeauxWines.csv?dl=1'
 wine_data <- read_csv(link, locale = readr::locale(encoding = "latin1"))
 
+# Commented out formatting purposes, prior data review/exploration
 # summary(wine_data)
 # str(wine_data)
 ```
 
+## Mutate our variables into factors & remove variables with constant values
 
-
-# Mutate our variables into factors & Remove variables with constant values
-```{r}
+```{r Variable Mutation}
 wine_cols <- c(5:989)
 wine_data[,wine_cols] <- lapply(wine_data[,wine_cols], factor)
 
@@ -51,12 +53,15 @@ wine_data[,wine_cols] <- lapply(wine_data[,wine_cols], factor)
 wine_fixed <- wine_data[, sapply(wine_data, function(col) length(unique(col))) > 1]
 ```
 
-# Remove dollar signs from Price.
-```{r}
+## Remove dollar signs from Price.
+```{r Cleaning Data-Remove NAs}
 # Fix Price Variable
 wine_fixed$Price <- str_replace(wine_fixed$Price, "\\$", "")
 
 wine_fixed$Price <- as.numeric(wine_fixed$Price)
+
+# Creating no price dataframe without dropping NAs
+noprice_wine_fixed <- wine_fixed
 
 wine_fixed <- drop_na(wine_fixed)
 
@@ -65,23 +70,12 @@ colnames(wine_fixed) <- make.names(names(wine_fixed))
 
 # For some reason there are two WELL DONE columns, so lets change the name of one of them?
 colnames(wine_fixed)[489] <- 'WELL.DONE.2'
-
-# Notes:
-# what does well done mean in terms of wine???
-# look at price - some are in $/ML
 ```
-
-```{r}
-#wine_fixed$Year
-#not_price <- wine_fixed[c(2,3,5:620)]
-#wine_fixed$Price
-
-#rfImpute(wine_fixed$Price, wine_fixed$Year)
-```
-
 
 # Visualizations
-```{r}
+```{r Data Exploration-Visualizations}
+
+# Score v Price
 price_score_plot <- ggplot(wine_fixed, aes(x = Price, y = Score)) +
   geom_point() +
   geom_smooth(method = "lm", color = "red") +
@@ -93,6 +87,7 @@ price_score_plot <- ggplot(wine_fixed, aes(x = Price, y = Score)) +
 
 price_score_plot
 
+# Score v Year
 score_year_plot <- ggplot(wine_fixed, aes(x = Year, y = Score)) +
   geom_point() +
   geom_smooth(method = "lm", color = "red") +
@@ -104,6 +99,7 @@ score_year_plot <- ggplot(wine_fixed, aes(x = Year, y = Score)) +
 
 score_year_plot
 
+# Score Histogram
 hist_score_plot <- ggplot(wine_fixed, aes(x = Score)) + 
   geom_histogram(binwidth = 1, color="black", fill="white") +
   theme(panel.grid.major = element_blank(), # Turn of the background grid
@@ -116,42 +112,45 @@ hist_score_plot
 ```
 
 # Linear regressions
-```{r}
+```{r LM 1 Score ~ Price}
 # LM 1 = Score predicted by Price
 lm_1 <- lm(Score ~ Price, data = wine_fixed)
 
 summary(lm_1)
 ```
 
-```{r}
+```{r LM 2 Score ~ Year}
 # LM 2 = Score predicted by Year
 lm_2 <- lm(Score ~ Year, data = wine_fixed)
 
 summary(lm_2)
 ```
 
+# Decision Tree
 
-##Strat split to the train/test. BS, SP
-```{r}
+## Stratified split to the train/test
+```{r Splitting via Stratified}
+set.seed(1984)
+
 wine_no_name <- wine_fixed[2:620]
 
-set.seed(1984)
 split <-  stratified(wine_no_name, c('Score'), .80,bothSets = TRUE)
 train_strat <- split[[1]]
 test_strat <- split[[2]]
 ```
 
-# Decision Trees
-```{r}
-tree_1 <- rpart(Score ~., # Need to run tree on train and test set Ethan
+## Run Decision Tree
+```{r Decision Tree Full}
+tree_1 <- rpart(Score ~.,
                 data = train_strat)
 
 plotcp(tree_1)
-summary(tree_1)# Plot cp
+summary(tree_1)
 ```
 
-# Prediction with no name in wine set from Decision Trees
-```{r}
+## Prediction of Tree
+
+```{r Decision Tree - Prediction}
 wine_pred_no_name <- predict(tree_1, test_strat)
 
 actual <- test_strat$Score
@@ -159,20 +158,11 @@ predicted <- wine_pred_no_name
 rmse(actual, predicted)
 ```
 
-<!-- SHIV: REMOVE LATER -->
-<!-- ### Uncomment and move above  -->
-<!-- ##Strat split to the train/test. BS -->
-<!-- # ```{r} -->
-<!-- #  -->
-<!-- # set.seed(1984) -->
-<!-- # split <-  stratified(wine_fixed, c('Score'), .80,bothSets = TRUE) -->
-<!-- # train_strat <- split[[1]] -->
-<!-- # test_strat <- split[[2]] -->
-<!-- # ``` -->
+# Random Forest
 
+## Random Forest Model Results 
 
-# Random Forest Model Results 
-```{r}
+```{r Random Forest: Martin Barron}
 load("./random_forest_model.rda")
 rf_mod <- fit
 
@@ -181,75 +171,62 @@ print(rf_mod)
 print(sqrt(rf_mod$mse[100]))
 ```
 
+# XGBoost
 
-## Created XG frame and used lapply to convert to numeric. BS
-```{r}
+## Created XG frame and used lapply to convert to numeric
+```{r Numeric Conv. for XGBoost}
 wine_XG <- wine_fixed
 
 wine_XG[,c(2,4:620)] <-  lapply(wine_XG[,c(2,4:620)], as.numeric)
 ```
 
 
-## Re Strat split on new set of numeric Data. BS
-```{r}
+## Re-stratified split on new set of numeric data
+```{r Re-Stratified Split}
 set.seed(1984)
+
 split <-  stratified(wine_XG, c('Score'), .80,bothSets = TRUE)
 train_strat <- split[[1]]
 test_strat <- split[[2]]
-
 ```
 
-- 
-### First XG Run. BS
-### Converting to xgb magic. BS
-```{r}
+## First XG Run
+```{r XGBoost Convert - DMatrix}
 wtrain <- xgb.DMatrix(data = as.matrix(train_strat[,c(2,4:620)]), label = as.numeric(train_strat$Score))
 # Create test matrix
 wtest <- xgb.DMatrix(data = as.matrix(test_strat[, c(2, 4:620)]), label = as.numeric(test_strat$Score)) 
 ```
 
 
-## Training basic XG. BS
-```{r}
+## Training Basic XG
+```{r Baisc XG}
 set.seed(1984)
 winebeast <- xgboost(data = wtrain, 
-               
+               eta = .3,
                nrounds = 1000, 
                nthread = 3, 
-               
                verbose = 1, 
-                print_every_n = 20, )
-
+               print_every_n = 20)
 ```
-<!-- SHIV: REMOVE LATER -->
-<!-- ## Testing basic XG. BS -->
-<!-- ```{r} -->
-<!-- wine_preds <- predict(winebeast, wtrain)  -->
-<!-- # Join predictions and actual -->
-<!-- wine_dat <- cbind.data.frame(wine_preds , train_strat$Score) -->
-<!-- names(wine_dat) <- c("predictions", "response") -->
 
-
-<!-- wine_preds_1 <- predict(winebeast, wtest) -->
-
-
-<!-- ``` -->
-## Check Accuracy. BS
-```{r}
+## Check Accuracy
+```{r Accuray of XGBoost - RMSE}
 wine_preds_1 <- predict(winebeast, wtest)
 
-##install.packages("Metrics")
-## Based on this remedeal mean square we murdered this. 
-actual <- test_strat$Score
+actual <- test_strat$Score # Usable for all but no price XGBoost
 predicted <- wine_preds_1
 rmse(actual, predicted)
 ```
+
 ## Plotting results to first XG-boost.
-```{r}
-# Martin graph code 
+```{r XGBoost Plotting}
+# Martin Barron Graph Code
+
 plot_data <- cbind.data.frame(actual, predicted)
+
 plot_data$col <- log(abs(actual - predicted) + 1)
-winebeast_plot <- ggplot(plot_data[actual > 60,], aes(x = actual, y = predicted, color = col)) + ## removing outlier score of 60 
+
+winebeast_plot <- ggplot(plot_data[actual > 60,], aes(x = actual, y = predicted, color = col)) + # removing outlier score of 60 
   geom_point() +
   geom_abline(intercept = 0, slope = 1) +
   scale_color_gradient(low = "blue", high = "red") +
@@ -267,9 +244,10 @@ winebeast_plot <- ggplot(plot_data[actual > 60,], aes(x = actual, y = predicted,
 winebeast_plot
 ```
 
+# Primary Tuning of XGBoost
 
-## Check number of itterations in model. BS
-```{r}
+## Check number of itterations in model
+```{r Iteration Check for eta .1}
 set.seed(1984)
 wine_amount <- xgb.cv(data = wtrain, 
               
@@ -285,9 +263,11 @@ wine_amount <- xgb.cv(data = wtrain,
                print_every_n = 20) 
 
 ```
-## Best itteration count is 756, 1000 will be a realistic iterations number for final XGBoost. BS
-## Work on heat maps.BS
-```{r}
+
+### Best itteration count is 756, 1000 will be a realistic iterations number for final XGBoost.
+
+## Heat Map Loop
+```{r Heat Map Loop}
 # Tuning Loop - Martin Barron contribution. 
 # Be Careful - This can take a very long time to run
 max_depth_vals <- c(3, 5, 7, 10, 15) # Create vector of max depth values
@@ -321,16 +301,9 @@ for(i in 1:nrow(wcv_params)){
 
 ```
 
-```{r}
-##wcv_params
-##rmse_vec
-##res_db
-```
-
-
-## Martin Heat plot of tuning.BS 
-```{r}
-# More Martin ggplot code 
+## Heat Plot of Tuning
+```{r Heat Map Plotting}
+# Martin Baron ggplot code
 # Join results in dataset
 res_db <- cbind.data.frame(wcv_params, rmse_vec)
 names(res_db)[3] <- c("rmse") 
@@ -351,10 +324,9 @@ wine_heat <- ggplot(res_db, aes(y = max_depth, x = min_child_weight, fill = rmse
   labs(x = "Minimum Child Weight", y = "Max Depth", fill = "RMSE") # Set labels
 wine_heat # Generate plot
 ```
-
-## Need to create multiple XG models to determine the prefered eta.
-# .1 eta run. BS
-```{r}
+## Combining Multiple etas for Optimal eta
+### .1 eta Run
+```{r .1 eta run}
 set.seed(1984)
 wine_eta1 <- xgb.cv(data = wtrain, # Set training data
               
@@ -379,8 +351,8 @@ wine_eta1 <- xgb.cv(data = wtrain, # Set training data
 wine_eta1
 ```
 
-# .05 eta run
-```{r}
+### .05 eta Run
+```{r .05 eta Run}
 set.seed(1984)
 wine_eta2 <- xgb.cv(data = wtrain, # Set training data
               
@@ -401,8 +373,8 @@ wine_eta2 <- xgb.cv(data = wtrain, # Set training data
               print_every_n = 20)
 ```
 
-# .01 eta run
-```{r}
+### .01 eta Run
+```{r .01 eta Run}
 set.seed(1984)
 wine_eta3 <- xgb.cv(data = wtrain, # Set training data
               
@@ -423,8 +395,8 @@ wine_eta3 <- xgb.cv(data = wtrain, # Set training data
               print_every_n = 20)
 ```
 
-# .005 eta run
-```{r}
+### .005 eta Run
+```{r .005 eta Run}
 set.seed(1984)
 wine_eta4 <- xgb.cv(data = wtrain, # Set training data
               
@@ -445,8 +417,8 @@ wine_eta4 <- xgb.cv(data = wtrain, # Set training data
               print_every_n = 20)
 ```
 
-#.001 eta run
-```{r}
+### .001 eta Run
+```{r .001 eta Run}
 set.seed(1984)
 wine_eta5 <- xgb.cv(data = wtrain, # Set training data
               
@@ -467,8 +439,8 @@ wine_eta5 <- xgb.cv(data = wtrain, # Set training data
               print_every_n = 20)
 ```
 
-#binding all eta runs
-```{r}
+## Binding All etas for Graph
+```{r  Binding etas}
 # Extract results for model with eta = 0.3
 pd1 <- cbind.data.frame(wine_eta1$evaluation_log[,c("iter", "test_rmse_mean")], rep(0.1, nrow(wine_eta1$evaluation_log)))
 names(pd1)[3] <- "eta"
@@ -490,8 +462,8 @@ eta_data <- rbind.data.frame(pd1, pd2, pd3, pd4, pd5)
 eta_data$eta <- as.factor(eta_data$eta)
 ```
 
-# plotting multiple runs
-```{r}
+## Plotting eta Runs
+```{r Plotting eta Runs}
 eta_plot <- ggplot(eta_data, aes(x = iter, y = test_rmse_mean, color = eta))+
   geom_smooth(alpha = 0.5) +
   theme_bw() + # Set theme
@@ -504,25 +476,9 @@ eta_plot <- ggplot(eta_data, aes(x = iter, y = test_rmse_mean, color = eta))+
 eta_plot
 ```
 
-## Confirming iteration ammount with new eta
-```{r}
-set.seed(1984)
-
-wine_it <- xgb.cv(data = wtrain, 
-              
-              nfold = 5, 
-               
-               eta = 0.005, 
-              
-               nrounds = 10000, 
-               early_stopping_rounds = 50, 
-               
-               verbose = 1, 
-               nthread = 5, 
-               print_every_n = 20)
-```
-
-```{r}
+## Iteration Optimization
+```{r Iteration Optimization}
+# Optimization for eta at .01
 set.seed(1984)
 
 wine_it_light <- xgb.cv(data = wtrain, 
@@ -538,10 +494,12 @@ wine_it_light <- xgb.cv(data = wtrain,
                nthread = 5, 
                print_every_n = 20)
 ```
-## 7500 minimum on new learning rate
+### 7500 minimum on new learning rate
 
-## Secound try will changed with the prefered tuned variables.
-```{r}
+# Final XG Models and Visuals
+
+## Optimal XGBoost with all Tuning Aspects
+```{r Optimal XGBoost Model - With Price}
 winebeast_1 <- xgboost(data = wtrain, # Use 5 fold cross-validation
                
               eta = 0.01, # Set learning rate
@@ -555,76 +513,63 @@ winebeast_1 <- xgboost(data = wtrain, # Use 5 fold cross-validation
               nthread = 5, # Set number of parallel threads
               print_every_n = 40) 
 
-
-
 winebeast_1_preds <- predict(winebeast_1, wtrain) 
-
-
 
 winebeast_1_preds1 <- predict(winebeast_1, wtest)
 
 rmse(actual, winebeast_1_preds1)
-
-
 ```
-### RSME of 1.618199 COncerned of hw low the current outcome is. This model is the main concern of the group, before moving forward with and other modeling.
+### RMSE: 1.672438
 
-### Method to create new prediction without the price included
-```{r}
-non_price <-  wine_fixed[,-4]
-```
-# COnvert to numeric. 
-```{r}
+## XGBoost with no Price
+### Create No Price Data Frame
+```{r non_price Data Frame}
+non_price <-  noprice_wine_fixed[,-4]
+
 np_XG <- non_price
 
 np_XG[,c(2,4:619)] <-  lapply(np_XG[,c(2,4:619)], as.numeric)
 ```
 
-
-### New stratisize split for non price data frame.
-```{r}
+### New Stratisize Split for Non-Price Data Frame
+```{r Stratisized Split for NP DF}
 set.seed(1984)
+
 nonpric_split <-  stratified(np_XG, c('Score'), .80,bothSets = TRUE)
+
 np_train_strat <- nonpric_split[[1]]
 np_test_strat <- nonpric_split[[2]]
 ```
 
-### New XGboost groups for no price
-```{r}
+### New XGboost Groups for No Price
+```{r New XGBoost Groups- No Price}
+# Create train matrix
 nptrain <- xgb.DMatrix(data = as.matrix(np_train_strat[,c(2,4:619)]), label = as.numeric(np_train_strat$Score))
 # Create test matrix
 nptest <- xgb.DMatrix(data = as.matrix(np_test_strat[, c(2, 4:619)]), label = as.numeric(np_test_strat$Score)) 
 ```
-# Eunning the XGboost without the price variable.
-```{r}
+
+## Running the XGboost Without the Price Variable.
+```{r XGBoost Run - No Price}
 wine_noprice <- xgboost(data = nptrain, 
-               
               eta = 0.01, # Set learning rate
               max.depth = 15, # Set max depth
               min_child_weight = 15, # Set minimum number of samples in node to split
-               
               nrounds = 8500, # Set number of rounds
               early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
-               
               verbose = 1, # 1 - Prints out fit
               nthread = 5, # Set number of parallel threads
               print_every_n = 40) 
 
-
-
 wine_noprice_preds <- predict(wine_noprice, nptrain) 
-
-
 
 wine_noprice_pred1 <- predict(wine_noprice, nptest)
 
 rmse(np_test_strat$Score, wine_noprice_pred1)
-
-
 ```
  
-## Top atteibutes for full XG
-```{r}
+# Results for XGBoost
+```{r Results for XGBoost - With Price}
 # Extract importance
 fullxg_mat <- xgb.importance(model = winebeast_1)
 # Plot importance (top 10 variables)
@@ -632,15 +577,16 @@ xgb.plot.importance(fullxg_mat, top_n = 10)
 ```
 
 
-## Top attrinutes for noprice XG
-```{r}
+## Top attributes for No Price XG
+```{r Attributes - No Price XG}
 # Extract importance
 npxg_mat <- xgb.importance(model = wine_noprice)
 # Plot importance (top 10 variables)
 xgb.plot.importance(npxg_mat, top_n = 10)
 ```
+
 ## Graph of Full XG
-```{r}
+```{r Graph of Full XG}
 act_wine_full <- test_strat$Score
 
 pred_wine_full <- winebeast_1_preds1
@@ -667,12 +613,11 @@ wine_full_plot
 ```
 
 
-## Graph of noPrice XG
-```{r}
+## Graph of No Price XG
+```{r Graph of No Price XG}
 act_wine_np <- np_test_strat$Score
 
 pred_wine_np <- wine_noprice_pred1
-
 
 wine_np_data <- cbind.data.frame(act_wine_np, pred_wine_full)
 wine_np_data$col <- log(abs(act_wine_np - pred_wine_full) + 1)
@@ -692,7 +637,6 @@ wine_np_plot <- ggplot(wine_np_data[act_wine_np > 60,], aes(x = act_wine_np, y =
        subtitle = "XGBoost Model 1",
        color = "Deviation from\nactual score")
 wine_np_plot
-
 ```
 
 
@@ -722,95 +666,5 @@ pred_np_breakdown = explainPredictions(wine_noprice, npXG_exp, nptest)
 showWaterfall(wine_noprice, npXG_exp, nptest, as.matrix(test_strat[, 2,4:220]) ,1441, type = "regression", threshold = 0.07)
 ```
 
-
-
-```{r}
-# Martin graph code 
-plot_data <- cbind.data.frame(actual, predicted)
-plot_data$col <- log(abs(actual - predicted) + 1)
-g_1 <- ggplot(plot_data[actual > 60,], aes(x = actual, y = predicted, color = col)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1) +
-  scale_color_gradient(low = "blue", high = "red") +
-  dark_theme_bw() + 
-  theme(axis.line = element_line(colour = "white"), 
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(), 
-        panel.border = element_blank(), 
-        panel.background = element_blank(),
-        plot.subtitle = element_text(face = "italic")) +
-  labs(x = "Actual Wine Score", y = "Predicted Wine Score",
-       title = "Predicted vs Actual Wine Score",
-       subtitle = "XGBoost Model 1",
-       color = "Deviation from\nactual score")
-g_1
-```
-
-```{r}
-# Tuning Loop - also Martin's code 
-# Be Careful - This can take a very long time to run
-max_depth_vals <- c(3, 5, 7, 10, 15) # Create vector of max depth values
-min_child_weight <- c(1,3,5,7, 10, 15) # Create vector of min child values
-
-# Expand grid of parameter values
-cv_params <- expand.grid(max_depth_vals, min_child_weight)
-names(cv_params) <- c("max_depth", "min_child_weight")
-# Create results vector
-rmse_vec <- rep(NA, nrow(cv_params)) 
-# Loop through results
-for(i in 1:nrow(cv_params)){
-  set.seed(111111)
-  bst_tune <- xgb.cv(data = wtrain, # Set training data
-              
-              nfold = 5, # Use 5 fold cross-validation
-               
-              eta = 0.1, # Set learning rate
-              max.depth = cv_params$max_depth[i], # Set max depth
-              min_child_weight = cv_params$min_child_weight[i], # Set minimum number of samples in node to split
-             
-               
-              nrounds = 500, # Set number of rounds
-              early_stopping_rounds = 50, # Set number of rounds to stop at if there is no im
-              verbose = 1, # 1 - Prints out fit
-              nthread = 1, # Set number of parallel threads
-              print_every_n = 20) # Prints out result every 20th iteration
-
-  rmse_vec[i] <- bst_tune$evaluation_log$test_rmse_mean[bst_tune$best_ntreelimit]
-}
-```
-
-```{r}
-# More Martin ggplot code 
-# Join results in dataset
-res_db <- cbind.data.frame(wcv_params, rmse_vec)
-names(res_db)[3:4] <- c("rmse") 
-res_db$max_depth <- as.factor(res_db$max_depth) # Convert tree number to factor for plotting
-res_db$min_child_weight <- as.factor(res_db$min_child_weight) # Convert node size to factor for plotting
-# Print RMSE heatmap
-g_2 <- ggplot(res_db, aes(y = max_depth, x = min_child_weight, fill = rmse)) + # set aesthetics
-  geom_tile() + # Use geom_tile for heatmap
-  theme_bw() + # Set theme
-  scale_fill_gradient2(low = "blue", # Choose low color
-    mid = "white", # Choose mid color
-    high = "red", # Choose high color
-    midpoint =mean(res_db$rmse), # Choose mid point
-    space = "Lab", 
-    na.value ="grey", # Choose NA value
-    guide = "colourbar", # Set color bar
-    aesthetics = "fill") + # Select aesthetics to apply
-  labs(x = "Minimum Child Weight", y = "Max Depth", fill = "RMSE") # Set labels
-g_2 # Generate plot
-```
-
-```{r}
-# SHAP results 
-# look at Tuesday's code 
-```
-
 # TODO:
-- Impute NAs
-- Check RandomForest
-- Tune xgBoost
-- look at SHAP Results / feature importance
-- Draw insight from SHAP
-- RMSE plot
+- Confirm Tuesday SHAP
