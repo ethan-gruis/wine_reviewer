@@ -204,7 +204,7 @@ set.seed(1984)
 winebeast <- xgboost(data = wtrain, 
                eta = .3,
                nrounds = 1000, 
-               nthread = 3, 
+               nthread = 11, 
                verbose = 1, 
                print_every_n = 20)
 ```
@@ -259,7 +259,7 @@ wine_amount <- xgb.cv(data = wtrain,
                early_stopping_rounds = 50, 
                
                verbose = 1, 
-               nthread = 4, 
+               nthread = 11, 
                print_every_n = 20) 
 
 ```
@@ -293,7 +293,7 @@ for(i in 1:nrow(wcv_params)){
               nrounds = 500, # Set number of rounds
               early_stopping_rounds = 50, # Set number of rounds to stop at if there is no im
               verbose = 1, # 1 - Prints out fit
-              nthread = 1, # Set number of parallel threads
+              nthread = 11, # Set number of parallel threads
               print_every_n = 20) # Prints out result every 20th iteration
 
   rmse_vec[i] <- bst_tune$evaluation_log$test_rmse_mean[bst_tune$best_ntreelimit]
@@ -343,7 +343,7 @@ wine_eta1 <- xgb.cv(data = wtrain, # Set training data
               early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
                
               verbose = 1, # 1 - Prints out fit
-              nthread = 3, # Set number of parallel threads
+              nthread = 11, # Set number of parallel threads
               print_every_n = 20) # Set evaluation metric to use
 
 ```
@@ -369,7 +369,7 @@ wine_eta2 <- xgb.cv(data = wtrain, # Set training data
               early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
                
               verbose = 1, # 1 - Prints out fit
-              nthread = 3, # Set number of parallel threads
+              nthread = 11, # Set number of parallel threads
               print_every_n = 20)
 ```
 
@@ -391,7 +391,7 @@ wine_eta3 <- xgb.cv(data = wtrain, # Set training data
               early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
                
               verbose = 1, # 1 - Prints out fit
-              nthread = 3, # Set number of parallel threads
+              nthread = 11, # Set number of parallel threads
               print_every_n = 20)
 ```
 
@@ -413,7 +413,7 @@ wine_eta4 <- xgb.cv(data = wtrain, # Set training data
               early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
                
               verbose = 1, # 1 - Prints out fit
-              nthread = 3, # Set number of parallel threads
+              nthread = 11, # Set number of parallel threads
               print_every_n = 20)
 ```
 
@@ -435,7 +435,7 @@ wine_eta5 <- xgb.cv(data = wtrain, # Set training data
               early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
                
               verbose = 1, # 1 - Prints out fit
-              nthread = 3, # Set number of parallel threads
+              nthread = 11, # Set number of parallel threads
               print_every_n = 20)
 ```
 
@@ -491,7 +491,7 @@ wine_it_light <- xgb.cv(data = wtrain,
                early_stopping_rounds = 50, 
                
                verbose = 1, 
-               nthread = 5, 
+               nthread = 11, 
                print_every_n = 20)
 ```
 ### 7500 minimum on new learning rate
@@ -510,7 +510,7 @@ winebeast_1 <- xgboost(data = wtrain, # Use 5 fold cross-validation
               early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
                
               verbose = 1, # 1 - Prints out fit
-              nthread = 5, # Set number of parallel threads
+              nthread = 11, # Set number of parallel threads
               print_every_n = 40) 
 
 winebeast_1_preds <- predict(winebeast_1, wtrain) 
@@ -558,7 +558,7 @@ wine_noprice <- xgboost(data = nptrain,
               nrounds = 8500, # Set number of rounds
               early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
               verbose = 1, # 1 - Prints out fit
-              nthread = 5, # Set number of parallel threads
+              nthread = 11, # Set number of parallel threads
               print_every_n = 40) 
 
 wine_noprice_preds <- predict(wine_noprice, nptrain) 
