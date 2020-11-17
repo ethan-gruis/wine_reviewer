@@ -639,31 +639,83 @@ wine_np_plot <- ggplot(wine_np_data[act_wine_np > 60,], aes(x = act_wine_np, y =
 wine_np_plot
 ```
 
-
 ## SHAP Code Full XG 1 of 3
-```{r}
+```{r Waterfall Price 1/3}
 XG_exp = buildExplainer(winebeast_1, wtrain, type = "regression", base_score = 0.5, trees_idx = NULL)
 ```
 ## SHAP Code FUll XG 2 of 3
-```{r}
+```{r Waterfall Price 2/3}
 pred_full_breakdown = explainPredictions(winebeast_1, XG_exp, wtest) # Breakdown predictions
 ```
 ## SHAP Code FUll XG 3 of 3
-```{r}
-showWaterfall(winebeast_1, XG_exp, wtest, as.matrix(np_test_strat[, 2,4:220]) ,1441, type = "regression", threshold = 0.07)
+```{r Waterfall Price 3/3}
+showWaterfall(winebeast_1, XG_exp, wtest, as.matrix(test_strat[, 2,4:220]) ,1441, type = "regression", threshold = 0.07)
 ```
 
 ## SHAP code noPrice XG 1 of 3
-```{r}
+```{r Waterfall No Price 1/3}
 npXG_exp = buildExplainer(wine_noprice, nptrain, type = "regression", base_score = 0.5, trees_idx = NULL)
 ```
 ## SHAP code noPrice 2 of 3
-```{r}
+```{r Waterfall No Price 2/3}
 pred_np_breakdown = explainPredictions(wine_noprice, npXG_exp, nptest)
 ```
 ## SHAP code noPrice 3 of 3
-```{r}
-showWaterfall(wine_noprice, npXG_exp, nptest, as.matrix(test_strat[, 2,4:220]) ,1441, type = "regression", threshold = 0.07)
+```{r Waterfall No Price 3/3}
+showWaterfall(wine_noprice, npXG_exp, nptest, as.matrix(np_test_strat[, 2,4:220]) ,1441, type = "regression", threshold = 0.07)
+```
+
+# SHAP Scores
+## For the price model
+```{r Shap Values Price}
+shap_values <- predict(winebeast_1,
+                     wtrain,
+                    predcontrib = TRUE,
+                    approxcontrib = F)
+
+shap_values[1,]
+```
+
+```{r Shap Results Price}
+shap_result <- shap.score.rank(xgb_model = winebeast_1,
+                               X_train = wtrain,
+                               shap_approx = F)
+
+var_importance(shap_result, top_n=10)
+```
+
+```{r Shap Long Price}
+shap_long = shap.prep(shap = shap_result,
+                      X_train = x_vars,
+                      top_n = 10)
+
+plot.shap.summary(data_long = shap_long)
+```
+
+## For the no-price model
+```{r Shap Values No Price}
+shap_values_np <- predict(wine_noprice,
+                          nptrain,
+                          predcontrib = TRUE,
+                          approxcontrib = F)
+
+shap_values_np[1,]
+```
+
+```{r Shap Results No Price}
+shap_result_np <- shap.score.rank(xgb_model = wine_noprice,
+                                  X_train = nptrain,
+                                  shap_approx = F)
+
+var_importance(shap_result_np, top_n = 10)
+```
+
+```{r Shap Long No Price}
+shap_long_np = shap.prep(shap = shap_result_np,
+                         X_train = nptrain,
+                         top_n = 10)
+
+plot.shap.summary(data_long = shap_long_np)
 ```
 
 # TODO:
