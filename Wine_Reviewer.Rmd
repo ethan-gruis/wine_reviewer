@@ -247,7 +247,7 @@ winebeast_plot
 # Primary Tuning of XGBoost
 
 ## Check number of itterations in model
-```{r Iteration Check for eta .1}
+```{r Iteration Check for eta .1, cache = TRUE}
 set.seed(1984)
 wine_amount <- xgb.cv(data = wtrain, 
               
@@ -267,7 +267,7 @@ wine_amount <- xgb.cv(data = wtrain,
 ### Best itteration count is 756, 1000 will be a realistic iterations number for final XGBoost.
 
 ## Heat Map Loop
-```{r Heat Map Loop}
+```{r Heat Map Loop, cache = TRUE}
 # Tuning Loop - Martin Barron contribution. 
 # Be Careful - This can take a very long time to run
 max_depth_vals <- c(3, 5, 7, 10, 15) # Create vector of max depth values
@@ -608,7 +608,7 @@ wine_full_plot <- ggplot(wine_full_data[act_wine_full > 60,], aes(x = act_wine_f
   labs(x = "Actual Wine Score", y = "Predicted Wine Score",
        title = "Predicted vs Actual Wine Score for Full XG",
        subtitle = "XGBoost Model 1",
-       color = "Deviation from\nactual score")
+       color = "Deviation from\nActual Score")
 wine_full_plot
 ```
 
@@ -618,10 +618,11 @@ wine_full_plot
 act_wine_np <- np_test_strat$Score
 
 pred_wine_np <- wine_noprice_pred1
-
-wine_np_data <- cbind.data.frame(act_wine_np, pred_wine_full)
-wine_np_data$col <- log(abs(act_wine_np - pred_wine_full) + 1)
-wine_np_plot <- ggplot(wine_np_data[act_wine_np > 60,], aes(x = act_wine_np, y = pred_wine_full, color = col)) + ## removing outlier score of 60 
+#wine_np_data <- cbind.data.frame(act_wine_np, pred_wine_full)
+wine_np_data <- cbind.data.frame(act_wine_np, pred_wine_np)
+#wine_np_data$col <- log(abs(act_wine_np - pred_wine_full) + 1)
+wine_np_data$col <- log(abs(act_wine_np - pred_wine_np) + 1)
+wine_np_plot <- ggplot(wine_np_data[act_wine_np > 60,], aes(x = act_wine_np, y = pred_wine_np, color = col)) + ## removing outlier score of 60 
   geom_point() +
   geom_abline(intercept = 0, slope = 1) +
   scale_color_gradient(low = "blue", high = "red") +
@@ -633,7 +634,7 @@ wine_np_plot <- ggplot(wine_np_data[act_wine_np > 60,], aes(x = act_wine_np, y =
         panel.background = element_blank(),
         plot.subtitle = element_text(face = "italic")) +
   labs(x = "Actual Wine Score", y = "Predicted Wine Score",
-       title = "Predicted vs Actual Wine Score FOr No Price XG",
+       title = "Predicted vs Actual Wine Score For No Price XG",
        subtitle = "XGBoost Model 1",
        color = "Deviation from\nactual score")
 wine_np_plot
@@ -720,3 +721,11 @@ plot.shap.summary(data_long = shap_long_np)
 
 # TODO:
 - Confirm Tuesday SHAP
+
+
+<!-- # TODO AFTER RUNNING -->
+<!-- ```{r, eval = FALSE} -->
+<!-- save(obj1, file = 'insert path here') -->
+<!-- load('insert path here') -->
+<!-- ``` -->
+
