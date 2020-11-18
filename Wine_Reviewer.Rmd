@@ -634,7 +634,7 @@ wine_np_plot <- ggplot(wine_np_data[act_wine_np > 60,], aes(x = act_wine_np, y =
         panel.background = element_blank(),
         plot.subtitle = element_text(face = "italic")) +
   labs(x = "Actual Wine Score", y = "Predicted Wine Score",
-       title = "Predicted vs Actual Wine Score For No Price XG",
+       title = "Predicted vs Actual Wine Score for No Price XG",
        subtitle = "XGBoost Model 1",
        color = "Deviation from\nactual score")
 wine_np_plot
