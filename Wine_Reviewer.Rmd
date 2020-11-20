@@ -301,7 +301,7 @@ for(i in 1:nrow(wcv_params)){
 ```
 
 ## Heat Plot of Tuning
-```{r Heat Map Plotting, eval = FALSE}
+```{r Heat Map Plotting Run, eval = FALSE}
 # Martin Baron ggplot code
 # Join results in dataset
 res_db <- cbind.data.frame(wcv_params, rmse_vec)
@@ -467,7 +467,7 @@ eta_data$eta <- as.factor(eta_data$eta)
 ```
 
 ## Plotting eta Runs
-```{r Plotting eta Runs, eval = FALSE}
+```{r Plotting eta Runs - Pre, eval = FALSE}
 eta_plot <- ggplot(eta_data, aes(x = iter, y = test_rmse_mean, color = eta))+
   geom_smooth(alpha = 0.5) +
   theme_bw() + # Set theme
@@ -507,7 +507,7 @@ wine_it_light <- xgb.cv(data = wtrain,
 # Final XG Models and Visuals
 
 ## Optimal XGBoost with all Tuning Aspects
-```{r Optimal XGBoost Model - With Price, eval = FALSE}
+```{r Optimal XGBoost Model - With Price (Run), eval = FALSE}
 winebeast_1 <- xgboost(data = wtrain, # Use 5 fold cross-validation
                
               eta = 0.01, # Set learning rate
@@ -565,7 +565,7 @@ nptest <- xgb.DMatrix(data = as.matrix(np_test_strat[, c(2, 4:619)]), label = as
 ```
 
 ## Running the XGboost Without the Price Variable.
-```{r XGBoost Run - No Price, eval = FALSE}
+```{r XGBoost Run - No Price (Run), eval = FALSE}
 wine_noprice <- xgboost(data = nptrain, 
               eta = 0.01, # Set learning rate
               max.depth = 15, # Set max depth
@@ -663,7 +663,7 @@ wine_np_plot
 ```
 
 ## SHAP Code Full XG 1 of 3
-```{r Waterfall Price 1/3, eval = FALSE}
+```{r Waterfall Price 1/3 (Run), eval = FALSE}
 XG_exp = buildExplainer(winebeast_1, wtrain, type = "regression", base_score = 0.5, trees_idx = NULL)
 
 save(XG_exp, file = "XG_exp_shap.RData")
@@ -674,20 +674,20 @@ load('./RData/XG_exp_shap.RData')
 ```
 
 ## SHAP Code FUll XG 2 of 3
-```{r Waterfall Price 2/3, eval = FALSE}
+```{r Waterfall Price 2/3 (Run), eval = FALSE}
 pred_full_breakdown = explainPredictions(winebeast_1, XG_exp, wtest) # Breakdown predictions
 
 save(pred_full_breakdown, file = "SHAP_full_breakdown_fullXG.RData")
 ```
 
-```{r Waterfall Price 2/3}
+```{r Waterfall Price 2/3, eval = FALSE}
 load('./RData/SHAP_full_breakdown_fullXG.RData')
 
 pred_full_breakdown
 ```
 
 ## SHAP Code FUll XG 3 of 3
-```{r Waterfall Price 3/3, eval = FALSE}
+```{r Waterfall Price 3/3 (Run), eval = FALSE}
 waterfall_shap_fullXG = showWaterfall(winebeast_1, XG_exp, wtrain, as.matrix(test_strat[, c(2, 4:620)]) ,1441, type = "regression", threshold = 0.07)
 
 save(waterfall_shap_fullXG, file = "waterfall_shap_fullXG.RData")
@@ -700,7 +700,7 @@ waterfall_shap_fullXG
 ```
 
 ## SHAP code noPrice XG 1 of 3
-```{r Waterfall No Price 1/3, eval = FALSE}
+```{r Waterfall No Price 1/3 (Run), eval = FALSE}
 npXG_exp = buildExplainer(wine_noprice, nptrain, type = "regression", base_score = 0.5, trees_idx = NULL)
 
 save(npXG_exp, file = "XG_exp_shap_NP.RData")
@@ -712,19 +712,19 @@ load('./RData/shap_np_xg_exp.RData')
 
 
 ## SHAP code noPrice 2 of 3
-```{r Waterfall No Price 2/3, eval = FALSE}
+```{r Waterfall No Price 2/3 (Run), eval = FALSE}
 pred_np_breakdown = explainPredictions(wine_noprice, npXG_exp, nptest)
 
 save(pred_np_breakdown, file = "SHAP_np_breakdown.RData")
 ```
 
-```{r Waterfall No Price 2/3}
+```{r Waterfall No Price 2/3, eval = FALSE}
 load('./RData/SHAP_np_breakdown.RData')
 
 pred_np_breakdown
 ```
 ## SHAP code noPrice 3 of 3
-```{r Waterfall No Price 3/3, eval = FALSE}
+```{r Waterfall No Price 3/3 (Run), eval = FALSE}
 waterfall_shap_np = showWaterfall(wine_noprice, npXG_exp, nptrain, as.matrix(np_test_strat[, c(2, 4:619)]) ,1441, type = "regression", threshold = 0.07)
 
 save(waterfall_shap_np, file = "waterfall_shap_np.RData")
@@ -740,7 +740,7 @@ waterfall_shap_np
 # SHAP Scores
 ## For the price model
 
-```{r Shap Results Price, eval = FALSE}
+```{r Shap Results Price (Run), eval = FALSE}
 shap_result <- shap.score.rank(xgb_model = winebeast_1,
                                X_train = as.matrix(train_strat[,c(2,4:620)]),
                                shap_approx = F)
@@ -755,7 +755,7 @@ load('./RData/shap_results.RData')
 var_importance(shap_result, top_n=10)
 ```
 
-```{r Shap Long Price, eval = FALSE}
+```{r Shap Long Price (Run), eval = FALSE}
 shap_long = shap.prep(shap = shap_result,
                       X_train = as.matrix(train_strat[,c(2,4:620)]),
                       top_n = 10)
@@ -771,7 +771,7 @@ plot.shap.summary(data_long = shap_long)
 ```
 
 ## For the no-price model
-```{r Shap Results No Price, eval = FALSE}
+```{r Shap Results No Price (Run), eval = FALSE}
 shap_result_np <- shap.score.rank(xgb_model = wine_noprice,
                                   X_train = as.matrix(np_train_strat[,c(2,4:619)]),
                                   shap_approx = F)
@@ -786,7 +786,7 @@ load('./RData/shap_results_np.RData')
 var_importance(shap_result_np, top_n = 10)
 ```
 
-```{r Shap Long No Price, eval = FALSE}
+```{r Shap Long No Price (Run), eval = FALSE}
 shap_long_np = shap.prep(shap = shap_result_np,
                          X_train = as.matrix(np_train_strat[,c(2,4:619)]),
                          top_n = 10)
