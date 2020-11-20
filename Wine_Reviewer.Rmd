@@ -30,6 +30,7 @@ library(Metrics)
 library(pROC)
 library(SHAPforxgboost)
 library(xgboostExplainer)
+source("a_insights_shap_functions.r")
 ```
 
 # Data Cleaning and Exploration
@@ -199,7 +200,7 @@ wtest <- xgb.DMatrix(data = as.matrix(test_strat[, c(2, 4:620)]), label = as.num
 
 
 ## Training Basic XG
-```{r Baisc XG}
+```{r Basic XG, eval = FALSE}
 set.seed(1984)
 winebeast <- xgboost(data = wtrain, 
                eta = .3,
@@ -207,10 +208,13 @@ winebeast <- xgboost(data = wtrain,
                nthread = 11, 
                verbose = 1, 
                print_every_n = 20)
+save(winebeast, file = "./RData/winebeast.RData")
 ```
 
 ## Check Accuracy
 ```{r Accuray of XGBoost - RMSE}
+load("./RData/winebeast.RData")
+
 wine_preds_1 <- predict(winebeast, wtest)
 
 actual <- test_strat$Score # Usable for all but no price XGBoost
@@ -241,33 +245,29 @@ winebeast_plot <- ggplot(plot_data[actual > 60,], aes(x = actual, y = predicted,
        title = "Predicted vs Actual Wine Score",
        subtitle = "XGBoost Model 1",
        color = "Deviation from\nactual score")
+
 winebeast_plot
 ```
 
 # Primary Tuning of XGBoost
 
 ## Check number of itterations in model
-```{r Iteration Check for eta .1, cache = TRUE}
+```{r Iteration Check for eta .1, eval = FALSE}
 set.seed(1984)
 wine_amount <- xgb.cv(data = wtrain, 
-              
               nfold = 5, 
-               
                eta = 0.1, 
-              
                nrounds = 2000, 
                early_stopping_rounds = 50, 
-               
                verbose = 1, 
                nthread = 11, 
                print_every_n = 20) 
-
 ```
 
 ### Best itteration count is 756, 1000 will be a realistic iterations number for final XGBoost.
 
 ## Heat Map Loop
-```{r Heat Map Loop, cache = TRUE}
+```{r Heat Map Loop, eval = FALSE}
 # Tuning Loop - Martin Barron contribution. 
 # Be Careful - This can take a very long time to run
 max_depth_vals <- c(3, 5, 7, 10, 15) # Create vector of max depth values
@@ -298,11 +298,10 @@ for(i in 1:nrow(wcv_params)){
 
   rmse_vec[i] <- bst_tune$evaluation_log$test_rmse_mean[bst_tune$best_ntreelimit]
 }
-
 ```
 
 ## Heat Plot of Tuning
-```{r Heat Map Plotting}
+```{r Heat Map Plotting, eval = FALSE}
 # Martin Baron ggplot code
 # Join results in dataset
 res_db <- cbind.data.frame(wcv_params, rmse_vec)
@@ -322,11 +321,19 @@ wine_heat <- ggplot(res_db, aes(y = max_depth, x = min_child_weight, fill = rmse
     guide = "colourbar", # Set color bar
     aesthetics = "fill") + # Select aesthetics to apply
   labs(x = "Minimum Child Weight", y = "Max Depth", fill = "RMSE") # Set labels
+
+save(wine_heat, file = './RData/wine_heat.RData')
+```
+
+
+```{r Heat Map Plotting}
+load('./RData/wine_heat.RData')
+
 wine_heat # Generate plot
 ```
 ## Combining Multiple etas for Optimal eta
 ### .1 eta Run
-```{r .1 eta run}
+```{r .1 eta run, eval = FALSE}
 set.seed(1984)
 wine_eta1 <- xgb.cv(data = wtrain, # Set training data
               
@@ -347,12 +354,9 @@ wine_eta1 <- xgb.cv(data = wtrain, # Set training data
               print_every_n = 20) # Set evaluation metric to use
 
 ```
-```{r}
-wine_eta1
-```
 
 ### .05 eta Run
-```{r .05 eta Run}
+```{r .05 eta Run, eval = FALSE}
 set.seed(1984)
 wine_eta2 <- xgb.cv(data = wtrain, # Set training data
               
@@ -374,7 +378,7 @@ wine_eta2 <- xgb.cv(data = wtrain, # Set training data
 ```
 
 ### .01 eta Run
-```{r .01 eta Run}
+```{r .01 eta Run, eval = FALSE}
 set.seed(1984)
 wine_eta3 <- xgb.cv(data = wtrain, # Set training data
               
@@ -396,7 +400,7 @@ wine_eta3 <- xgb.cv(data = wtrain, # Set training data
 ```
 
 ### .005 eta Run
-```{r .005 eta Run}
+```{r .005 eta Run, eval = FALSE}
 set.seed(1984)
 wine_eta4 <- xgb.cv(data = wtrain, # Set training data
               
@@ -418,7 +422,7 @@ wine_eta4 <- xgb.cv(data = wtrain, # Set training data
 ```
 
 ### .001 eta Run
-```{r .001 eta Run}
+```{r .001 eta Run, eval = FALSE}
 set.seed(1984)
 wine_eta5 <- xgb.cv(data = wtrain, # Set training data
               
@@ -440,7 +444,7 @@ wine_eta5 <- xgb.cv(data = wtrain, # Set training data
 ```
 
 ## Binding All etas for Graph
-```{r  Binding etas}
+```{r  Binding etas, eval = FALSE}
 # Extract results for model with eta = 0.3
 pd1 <- cbind.data.frame(wine_eta1$evaluation_log[,c("iter", "test_rmse_mean")], rep(0.1, nrow(wine_eta1$evaluation_log)))
 names(pd1)[3] <- "eta"
@@ -463,7 +467,7 @@ eta_data$eta <- as.factor(eta_data$eta)
 ```
 
 ## Plotting eta Runs
-```{r Plotting eta Runs}
+```{r Plotting eta Runs, eval = FALSE}
 eta_plot <- ggplot(eta_data, aes(x = iter, y = test_rmse_mean, color = eta))+
   geom_smooth(alpha = 0.5) +
   theme_bw() + # Set theme
@@ -473,23 +477,27 @@ eta_plot <- ggplot(eta_data, aes(x = iter, y = test_rmse_mean, color = eta))+
         panel.background = element_blank()) + # Remove grid 
   labs(x = "Number of Trees", title = "Error Rate v Number of Trees",
        y = "Error Rate", color = "Learning \n Rate")  # Set labels
+
+save(eta_plot, file = './RData/eta_plot.RData')
+```
+
+
+```{r Plotting eta Runs}
+load('./RData/eta_plot.RData')
+
 eta_plot
 ```
 
 ## Iteration Optimization
-```{r Iteration Optimization}
+```{r Iteration Optimization, eval = FALSE}
 # Optimization for eta at .01
 set.seed(1984)
 
 wine_it_light <- xgb.cv(data = wtrain, 
-              
               nfold = 5, 
-               
                eta = 0.01, 
-              
                nrounds = 8000, 
                early_stopping_rounds = 50, 
-               
                verbose = 1, 
                nthread = 11, 
                print_every_n = 20)
@@ -499,7 +507,7 @@ wine_it_light <- xgb.cv(data = wtrain,
 # Final XG Models and Visuals
 
 ## Optimal XGBoost with all Tuning Aspects
-```{r Optimal XGBoost Model - With Price}
+```{r Optimal XGBoost Model - With Price, eval = FALSE}
 winebeast_1 <- xgboost(data = wtrain, # Use 5 fold cross-validation
                
               eta = 0.01, # Set learning rate
@@ -511,7 +519,14 @@ winebeast_1 <- xgboost(data = wtrain, # Use 5 fold cross-validation
                
               verbose = 1, # 1 - Prints out fit
               nthread = 11, # Set number of parallel threads
-              print_every_n = 40) 
+              print_every_n = 40)
+
+save(winebeast_1, file = "./RData/winebeast_1.RData")
+```
+
+
+```{r Optimal XGBoost Model - With Price}
+load("./RData/winebeast_1.RData")
 
 winebeast_1_preds <- predict(winebeast_1, wtrain) 
 
@@ -550,7 +565,7 @@ nptest <- xgb.DMatrix(data = as.matrix(np_test_strat[, c(2, 4:619)]), label = as
 ```
 
 ## Running the XGboost Without the Price Variable.
-```{r XGBoost Run - No Price}
+```{r XGBoost Run - No Price, eval = FALSE}
 wine_noprice <- xgboost(data = nptrain, 
               eta = 0.01, # Set learning rate
               max.depth = 15, # Set max depth
@@ -560,6 +575,13 @@ wine_noprice <- xgboost(data = nptrain,
               verbose = 1, # 1 - Prints out fit
               nthread = 11, # Set number of parallel threads
               print_every_n = 40) 
+
+save(wine_noprice, file = "./RData/wine_noprice.RData")
+```
+
+
+```{r XGBoost Run - No Price}
+load("./RData/wine_noprice.RData")
 
 wine_noprice_preds <- predict(wine_noprice, nptrain) 
 
@@ -636,96 +658,145 @@ wine_np_plot <- ggplot(wine_np_data[act_wine_np > 60,], aes(x = act_wine_np, y =
   labs(x = "Actual Wine Score", y = "Predicted Wine Score",
        title = "Predicted vs Actual Wine Score for No Price XG",
        subtitle = "XGBoost Model 1",
-       color = "Deviation from\nactual score")
+       color = "Deviation from\nActual Score")
 wine_np_plot
 ```
 
 ## SHAP Code Full XG 1 of 3
-```{r Waterfall Price 1/3}
+```{r Waterfall Price 1/3, eval = FALSE}
 XG_exp = buildExplainer(winebeast_1, wtrain, type = "regression", base_score = 0.5, trees_idx = NULL)
+
+save(XG_exp, file = "XG_exp_shap.RData")
 ```
+
+```{r Waterfall Price 1/3}
+load('./RData/XG_exp_shap.RData')
+```
+
 ## SHAP Code FUll XG 2 of 3
-```{r Waterfall Price 2/3}
+```{r Waterfall Price 2/3, eval = FALSE}
 pred_full_breakdown = explainPredictions(winebeast_1, XG_exp, wtest) # Breakdown predictions
+
+save(pred_full_breakdown, file = "SHAP_full_breakdown_fullXG.RData")
 ```
+
+```{r Waterfall Price 2/3}
+load('./RData/SHAP_full_breakdown_fullXG.RData')
+
+pred_full_breakdown
+```
+
 ## SHAP Code FUll XG 3 of 3
+```{r Waterfall Price 3/3, eval = FALSE}
+waterfall_shap_fullXG = showWaterfall(winebeast_1, XG_exp, wtrain, as.matrix(test_strat[, c(2, 4:620)]) ,1441, type = "regression", threshold = 0.07)
+
+save(waterfall_shap_fullXG, file = "waterfall_shap_fullXG.RData")
+```
+
 ```{r Waterfall Price 3/3}
-showWaterfall(winebeast_1, XG_exp, wtest, as.matrix(test_strat[, 2,4:220]) ,1441, type = "regression", threshold = 0.07)
+load('./RData/waterfall_shap_fullXG.RData')
+
+waterfall_shap_fullXG
 ```
 
 ## SHAP code noPrice XG 1 of 3
-```{r Waterfall No Price 1/3}
+```{r Waterfall No Price 1/3, eval = FALSE}
 npXG_exp = buildExplainer(wine_noprice, nptrain, type = "regression", base_score = 0.5, trees_idx = NULL)
+
+save(npXG_exp, file = "XG_exp_shap_NP.RData")
 ```
+
+```{r Waterfall No Price 1/3}
+load('./RData/shap_np_xg_exp.RData')
+```
+
+
 ## SHAP code noPrice 2 of 3
-```{r Waterfall No Price 2/3}
+```{r Waterfall No Price 2/3, eval = FALSE}
 pred_np_breakdown = explainPredictions(wine_noprice, npXG_exp, nptest)
+
+save(pred_np_breakdown, file = "SHAP_np_breakdown.RData")
+```
+
+```{r Waterfall No Price 2/3}
+load('./RData/SHAP_np_breakdown.RData')
+
+pred_np_breakdown
 ```
 ## SHAP code noPrice 3 of 3
+```{r Waterfall No Price 3/3, eval = FALSE}
+waterfall_shap_np = showWaterfall(wine_noprice, npXG_exp, nptrain, as.matrix(np_test_strat[, c(2, 4:619)]) ,1441, type = "regression", threshold = 0.07)
+
+save(waterfall_shap_np, file = "waterfall_shap_np.RData")
+```
+
+
 ```{r Waterfall No Price 3/3}
-showWaterfall(wine_noprice, npXG_exp, nptest, as.matrix(np_test_strat[, 2,4:220]) ,1441, type = "regression", threshold = 0.07)
+load('./RData/waterfall_shap_np.RData')
+
+waterfall_shap_np
 ```
 
 # SHAP Scores
 ## For the price model
-```{r Shap Values Price}
-shap_values <- predict(winebeast_1,
-                     wtrain,
-                    predcontrib = TRUE,
-                    approxcontrib = F)
 
-shap_values[1,]
+```{r Shap Results Price, eval = FALSE}
+shap_result <- shap.score.rank(xgb_model = winebeast_1,
+                               X_train = as.matrix(train_strat[,c(2,4:620)]),
+                               shap_approx = F)
+
+save(shap_result, file = "shap_results.RData")
 ```
 
+
 ```{r Shap Results Price}
-shap_result <- shap.score.rank(xgb_model = winebeast_1,
-                               X_train = wtrain,
-                               shap_approx = F)
+load('./RData/shap_results.RData')
 
 var_importance(shap_result, top_n=10)
 ```
 
-```{r Shap Long Price}
+```{r Shap Long Price, eval = FALSE}
 shap_long = shap.prep(shap = shap_result,
-                      X_train = x_vars,
+                      X_train = as.matrix(train_strat[,c(2,4:620)]),
                       top_n = 10)
+
+save(shap_long, file = "shap_long.RData")
+```
+
+
+```{r Shap Long Price}
+load('./RData/shap_long.RData')
 
 plot.shap.summary(data_long = shap_long)
 ```
 
 ## For the no-price model
-```{r Shap Values No Price}
-shap_values_np <- predict(wine_noprice,
-                          nptrain,
-                          predcontrib = TRUE,
-                          approxcontrib = F)
+```{r Shap Results No Price, eval = FALSE}
+shap_result_np <- shap.score.rank(xgb_model = wine_noprice,
+                                  X_train = as.matrix(np_train_strat[,c(2,4:619)]),
+                                  shap_approx = F)
 
-shap_values_np[1,]
+save(shap_result_np, file = "shap_results_np.RData")
 ```
 
+
 ```{r Shap Results No Price}
-shap_result_np <- shap.score.rank(xgb_model = wine_noprice,
-                                  X_train = nptrain,
-                                  shap_approx = F)
+load('./RData/shap_results_np.RData')
 
 var_importance(shap_result_np, top_n = 10)
 ```
 
-```{r Shap Long No Price}
+```{r Shap Long No Price, eval = FALSE}
 shap_long_np = shap.prep(shap = shap_result_np,
-                         X_train = nptrain,
+                         X_train = as.matrix(np_train_strat[,c(2,4:619)]),
                          top_n = 10)
+
+save(shap_long_np, file = "shap_long_np.RData")
+```
+
+
+```{r Shap Long No Price}
+load("./RData/shap_long_np.RData")
 
 plot.shap.summary(data_long = shap_long_np)
 ```
-
-# TODO:
-- Confirm Tuesday SHAP
-
-
-<!-- # TODO AFTER RUNNING -->
-<!-- ```{r, eval = FALSE} -->
-<!-- save(obj1, file = 'insert path here') -->
-<!-- load('insert path here') -->
-<!-- ``` -->
-
