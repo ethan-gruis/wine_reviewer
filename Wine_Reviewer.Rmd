@@ -331,6 +331,10 @@ load('./RData/wine_heat.RData')
 
 wine_heat # Generate plot
 ```
+### Max Depth Tuning Note
+
+After additional examination of this heat plot, we had decided to change the max.depth setting from 15 to 7 in our new runs. However, we are not going to be re-running SHAP or the explainer at the end of this document. Any differences in RMSE or results will be highlighted in each section. Because of this change, we also will run through multiple etas using the new max.depth in order to ensure the best results.
+
 ## Combining Multiple etas for Optimal eta
 ### .1 eta Run
 ```{r .1 eta run, eval = FALSE}
@@ -340,7 +344,7 @@ wine_eta1 <- xgb.cv(data = wtrain, # Set training data
               nfold = 5, # Use 5 fold cross-validation
                
               eta = 0.1, # Set learning rate
-              max.depth = 15, # Set max depth
+              max.depth = 7, # Set max depth
               min_child_weight = 15, # Set minimum number of samples in node to split
               gamma = 0, # Set minimum loss reduction for split
               subsample = 0.9, # Set proportion of training data to use in tree
@@ -363,7 +367,7 @@ wine_eta2 <- xgb.cv(data = wtrain, # Set training data
               nfold = 5, # Use 5 fold cross-validation
                
               eta = 0.05, # Set learning rate
-              max.depth = 15, # Set max depth
+              max.depth = 7, # Set max depth
               min_child_weight = 15, # Set minimum number of samples in node to split
               gamma = 0, # Set minimum loss reduction for split
               subsample = 0.9, # Set proportion of training data to use in tree
@@ -385,7 +389,7 @@ wine_eta3 <- xgb.cv(data = wtrain, # Set training data
               nfold = 5, # Use 5 fold cross-validation
                
               eta = 0.01, # Set learning rate
-              max.depth = 15, # Set max depth
+              max.depth = 7, # Set max depth
               min_child_weight = 15, # Set minimum number of samples in node to split
               gamma = 0, # Set minimum loss reduction for split
               subsample = 0.9, # Set proportion of training data to use in tree
@@ -407,7 +411,7 @@ wine_eta4 <- xgb.cv(data = wtrain, # Set training data
               nfold = 5, # Use 5 fold cross-validation
                
               eta = 0.005, # Set learning rate
-              max.depth = 15, # Set max depth
+              max.depth = 7, # Set max depth
               min_child_weight = 15, # Set minimum number of samples in node to split
               gamma = 0, # Set minimum loss reduction for split
               subsample = 0.9, # Set proportion of training data to use in tree
@@ -429,7 +433,7 @@ wine_eta5 <- xgb.cv(data = wtrain, # Set training data
               nfold = 5, # Use 5 fold cross-validation
                
               eta = 0.001, # Set learning rate
-              max.depth = 15, # Set max depth
+              max.depth = 7, # Set max depth
               min_child_weight = 15, # Set minimum number of samples in node to split
               gamma = 0, # Set minimum loss reduction for split
               subsample = 0.9, # Set proportion of training data to use in tree
@@ -468,25 +472,30 @@ eta_data$eta <- as.factor(eta_data$eta)
 
 ## Plotting eta Runs
 ```{r Plotting eta Runs - Pre, eval = FALSE}
-eta_plot <- ggplot(eta_data, aes(x = iter, y = test_rmse_mean, color = eta))+
+eta_plot_NEW <- ggplot(eta_data, aes(x = iter, y = test_rmse_mean, color = eta))+
   geom_smooth(alpha = 0.5) +
   theme_bw() + # Set theme
   theme(panel.grid.major = element_blank(), # Remove grid
         panel.grid.minor = element_blank(), # Remove grid
         panel.border = element_blank(), # Remove grid
         panel.background = element_blank()) + # Remove grid 
-  labs(x = "Number of Trees", title = "Error Rate v Number of Trees",
+  labs(x = "Number of Trees", title = "Error Rate v Number of Trees (Max Depth = 7)",
        y = "Error Rate", color = "Learning \n Rate")  # Set labels
 
-save(eta_plot, file = './RData/eta_plot.RData')
+save(eta_plot_NEW, file = './RData/eta_plot_NEW.RData')
 ```
 
 
 ```{r Plotting eta Runs}
 load('./RData/eta_plot.RData')
+load('./RData/eta_plot_NEW.RData')
 
 eta_plot
+
+eta_plot_NEW
 ```
+
+Seeing the new plot with Max Depth set to 7, our decision for the learning rate maintains and we will stick with 0.01.
 
 ## Iteration Optimization
 ```{r Iteration Optimization, eval = FALSE}
@@ -508,10 +517,11 @@ wine_it_light <- xgb.cv(data = wtrain,
 
 ## Optimal XGBoost with all Tuning Aspects
 ```{r Optimal XGBoost Model - With Price (Run), eval = FALSE}
+# We initially had the max.depth set to 15 and 
 winebeast_1 <- xgboost(data = wtrain, # Use 5 fold cross-validation
                
               eta = 0.01, # Set learning rate
-              max.depth = 15, # Set max depth
+              max.depth = 7, # Set max depth
               min_child_weight = 15, # Set minimum number of samples in node to split
                
               nrounds = 8500, # Set number of rounds
@@ -534,7 +544,8 @@ winebeast_1_preds1 <- predict(winebeast_1, wtest)
 
 rmse(actual, winebeast_1_preds1)
 ```
-### RMSE: 1.672438
+### Original RMSE: 1.672438 (Max Depth = 15)
+### New RMSE: 1.605214 (Max Depth = 7)
 
 ## XGBoost with no Price
 ### Create No Price Data Frame
@@ -568,7 +579,7 @@ nptest <- xgb.DMatrix(data = as.matrix(np_test_strat[, c(2, 4:619)]), label = as
 ```{r XGBoost Run - No Price (Run), eval = FALSE}
 wine_noprice <- xgboost(data = nptrain, 
               eta = 0.01, # Set learning rate
-              max.depth = 15, # Set max depth
+              max.depth = 7, # Set max depth
               min_child_weight = 15, # Set minimum number of samples in node to split
               nrounds = 8500, # Set number of rounds
               early_stopping_rounds = 20, # Set number of rounds to stop at if there is no improvement
@@ -589,6 +600,8 @@ wine_noprice_pred1 <- predict(wine_noprice, nptest)
 
 rmse(np_test_strat$Score, wine_noprice_pred1)
 ```
+# Original RMSE: 1.775378 (Max Depth = 15)
+# New RMSE: 1.728415 (Max Depth = 7)
  
 # Results for XGBoost
 ```{r Results for XGBoost - With Price}
@@ -661,6 +674,12 @@ wine_np_plot <- ggplot(wine_np_data[act_wine_np > 60,], aes(x = act_wine_np, y =
        color = "Deviation from\nActual Score")
 wine_np_plot
 ```
+
+## SHAP and XGBoost Explainer
+
+This section was ran prior to the change of Max Depth, all of these graphs are using the model's that had the Max Depth of 15.
+
+For the sake of time we chose not to re-run this section.
 
 ## SHAP Code Full XG 1 of 3
 ```{r Waterfall Price 1/3 (Run), eval = FALSE}
